@@ -1,0 +1,27 @@
+{
+  "name": "@codersmu/core",
+  "version": "0.1.0",
+  "description": "Shared Coders.mu client logic",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.mts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.mts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "sideEffects": false,
+  "scripts": {
+    "build": "tsdown",
+    "dev": "tsdown --watch",
+    "typecheck": "tsc --noEmit",
+    "check": "pnpm typecheck && pnpm build"
+  },
+  "license": "MIT"
+}

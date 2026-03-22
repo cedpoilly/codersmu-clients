@@ -1,46 +1,47 @@
-# codersmu
+# codersmu-clients
 
-CLI for consulting public meetup data from the `coders.mu` website.
+Workspace for Coders.mu clients.
 
-The package exposes two commands: `codersmu` and `cmu`.
+Today, the installable client is the CLI at the repository root. The shared domain logic lives in `packages/core`, and `apps/raycast` contains an npm-managed Raycast extension skeleton.
+
+The CLI exposes two commands: `codersmu` and `cmu`.
 
 ## Install
 
-From npm:
+From GitHub:
 
 ```bash
-npm install -g codersmu
+npm install -g github:<owner>/<repo>#main
 codersmu next
 cmu next
 ```
 
-One-off execution from the registry:
+From a GitHub tag:
 
 ```bash
-npx codersmu@latest next
-pnpm dlx codersmu next
-bunx codersmu next
-```
-
-From a GitHub repository tag:
-
-```bash
-npm install -g github:<owner>/<repo>#v0.1.0
+npm install -g github:<owner>/<repo>#v0.0.0-prototype.1
 codersmu next
 cmu next
 ```
 
 GitHub installs compile the CLI from source during installation, so Node `>=20.11` is still required.
 
-There is no native binary in the release flow yet. The first release track is an npm package. If we decide to support people without Node later, we can attach macOS/Linux/Windows binaries to GitHub Releases as a separate distribution channel.
+There is no native binary in the release flow yet. If we decide to support people without Node later, we can attach macOS/Linux/Windows binaries to GitHub Releases as a separate distribution channel.
 
-## Why this stack
+## Workspace Layout
 
-- Node.js CLI published on npm so it works with `npx`, `pnpm dlx`, `yarn dlx`, and `bunx`
-- TypeScript for maintainability and future API client typing
-- Zero runtime dependencies to keep the package small and startup time fast
-- Automatic data refresh with a local cache hidden behind the CLI
-- A `MeetupProvider` abstraction so the scraper can later be replaced by an official public endpoint
+```text
+.
+├── apps/
+│   └── raycast/
+├── packages/
+│   └── core/
+└── src/
+```
+
+- `src/`: the installable CLI package
+- `packages/core`: shared meetup fetching, cache, calendar, and provider logic
+- `apps/raycast`: npm-managed Raycast extension app
 
 ## Commands
 
@@ -67,7 +68,7 @@ Use `--short` or `-s` for a more compact human-readable listing.
 
 ```bash
 pnpm install
-pnpm build
+pnpm build:all
 node dist/cli.mjs next
 node dist/cli.mjs previous
 node dist/cli.mjs list
@@ -88,12 +89,12 @@ GitHub Actions:
 - `.github/workflows/ci.yml` runs install, typecheck, build, and `npm pack --dry-run`
 - `.github/workflows/release.yml` publishes to npm when a GitHub Release is published
 
-Before the first real release:
+Before the first public release:
 
 - create the GitHub repository and set it as this repo's remote
 - add `repository`, `homepage`, and `bugs` fields to `package.json`
 - create an npm access token and store it as `NPM_TOKEN` in the GitHub repository secrets
-- publish `v0.1.0` from a Git tag or GitHub Release
+- decide whether to keep distribution GitHub-only or publish the CLI package to npm
 
 ## Future API integration
 

@@ -1,4 +1,4 @@
-import type { Meetup, MeetupProvider } from '../types'
+import type { Meetup, MeetupProvider } from './types'
 
 function compareAsc(left: Meetup, right: Meetup): number {
   return Date.parse(left.startsAt) - Date.parse(right.startsAt)
@@ -6,6 +6,10 @@ function compareAsc(left: Meetup, right: Meetup): number {
 
 function nowUtc(): number {
   return Date.now()
+}
+
+export function isPastMeetup(meetup: Meetup, now = nowUtc()): boolean {
+  return Date.parse(meetup.endsAt) < now || meetup.status === 'completed'
 }
 
 export async function getSortedMeetups(provider: MeetupProvider): Promise<Meetup[]> {
@@ -19,10 +23,16 @@ export async function getCurrentOrNextMeetup(provider: MeetupProvider): Promise<
   return meetups.find((meetup) => Date.parse(meetup.endsAt) >= now)
 }
 
+export async function getUpcomingMeetups(provider: MeetupProvider): Promise<Meetup[]> {
+  const now = nowUtc()
+  return (await getSortedMeetups(provider))
+    .filter((meetup) => !isPastMeetup(meetup, now))
+}
+
 export async function getPastMeetups(provider: MeetupProvider): Promise<Meetup[]> {
   const now = nowUtc()
   return (await getSortedMeetups(provider))
-    .filter((meetup) => Date.parse(meetup.endsAt) < now || meetup.status === 'completed')
+    .filter((meetup) => isPastMeetup(meetup, now))
     .reverse()
 }
 

@@ -1,0 +1,59 @@
+{
+  "$schema": "https://www.raycast.com/schemas/extension.json",
+  "name": "codersmu-raycast",
+  "title": "Coders.mu",
+  "description": "Browse Coders.mu meetups and open calendar links from Raycast.",
+  "icon": "extension-icon.png",
+  "author": "your-raycast-handle",
+  "license": "MIT",
+  "categories": [
+    "Developer Tools"
+  ],
+  "platforms": [
+    "macOS"
+  ],
+  "preferences": [
+    {
+      "name": "cliPath",
+      "title": "CLI Path",
+      "description": "Path to the codersmu CLI executable. Leave empty to use `cmu` from PATH.",
+      "type": "textfield",
+      "required": false,
+      "placeholder": "cmu"
+    }
+  ],
+  "commands": [
+    {
+      "name": "next-meetup",
+      "title": "Next Meetup",
+      "subtitle": "Coders.mu",
+      "description": "Show the current or next Coders.mu meetup.",
+      "mode": "view"
+    },
+    {
+      "name": "meetups",
+      "title": "Meetups",
+      "subtitle": "Coders.mu",
+      "description": "Browse upcoming and past Coders.mu meetups.",
+      "mode": "view"
+    }
+  ],
+  "scripts": {
+    "build": "ray build -e dist",
+    "dev": "ray develop",
+    "lint": "ray lint",
+    "fix-lint": "ray lint --fix",
+    "publish": "ray publish"
+  },
+  "dependencies": {
+    "@raycast/api": "^1.104.10",
+    "@raycast/utils": "^2.2.3"
+  },
+  "devDependencies": {
+    "@raycast/eslint-config": "^2.1.1",
+    "eslint": "^9.38.0",
+    "prettier": "^3.6.2",
+    "typescript": "^5.9.3"
+  },
+  "type": "module"
+}

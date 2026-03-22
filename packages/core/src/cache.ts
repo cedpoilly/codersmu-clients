@@ -2,7 +2,7 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { dirname, join } from 'node:path'
 
-import type { MeetupCache } from '../types'
+import type { MeetupCache } from './types'
 
 const DEFAULT_CACHE_FILE = join(homedir(), '.codersmu', 'meetups.json')
 const DEFAULT_CACHE_TTL_MS = 6 * 60 * 60 * 1000

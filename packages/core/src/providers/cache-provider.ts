@@ -1,4 +1,4 @@
-import { readMeetupCache } from '../core/cache'
+import { readMeetupCache } from '../cache'
 import type { Meetup, MeetupCache, MeetupProvider } from '../types'
 
 export class CacheMeetupProvider implements MeetupProvider {

@@ -64,3 +64,5 @@ export interface MeetupProvider {
   listMeetups(): Promise<Meetup[]>
   getMeetupBySlug(slug: string): Promise<Meetup | undefined>
 }
+
+export type MeetupListState = 'upcoming' | 'past' | 'all'

@@ -3,6 +3,7 @@
     "target": "ES2022",
     "module": "ESNext",
     "moduleResolution": "Bundler",
+    "baseUrl": ".",
     "strict": true,
     "declaration": true,
     "sourceMap": true,
@@ -10,12 +11,21 @@
     "verbatimModuleSyntax": true,
     "skipLibCheck": true,
     "noEmit": true,
+    "paths": {
+      "@codersmu/core": [
+        "./packages/core/src/index.ts"
+      ],
+      "@codersmu/core/*": [
+        "./packages/core/src/*"
+      ]
+    },
     "types": [
       "node"
     ]
   },
   "include": [
     "src/**/*.ts",
+    "packages/core/src/**/*.ts",
     "tsdown.config.ts"
   ]
 }

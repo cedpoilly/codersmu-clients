@@ -1,3 +1,7 @@
 dist
+packages/*/dist
 node_modules
+apps/*/node_modules
+apps/*/dist
+apps/*/raycast-env.d.ts
 *.tsbuildinfo

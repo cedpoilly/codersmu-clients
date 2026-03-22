@@ -12,7 +12,7 @@ const MOCK_MEETUPS: Meetup[] = [
     status: 'scheduled',
     location: {
       name: 'The Hive Ebene',
-      address: 'Vivéa Business Park, Moka Road',
+      address: 'Vivea Business Park, Moka Road',
       city: 'Ebene',
     },
     speakers: [
@@ -41,7 +41,7 @@ const MOCK_MEETUPS: Meetup[] = [
     status: 'completed',
     location: {
       name: 'La Turbine',
-      address: 'Vivéa Business Park, St Pierre',
+      address: 'Vivea Business Park, St Pierre',
       city: 'Moka',
     },
     speakers: [

@@ -4,13 +4,15 @@ import { writeFile } from 'node:fs/promises'
 import process from 'node:process'
 import { parseArgs } from 'node:util'
 
-import { isMeetupCacheFresh, readMeetupCache, writeMeetupCache } from './core/cache'
-import { getCurrentOrNextMeetup, getMeetup, getPastMeetups, getSortedMeetups } from './core/meetups'
-import { CacheMeetupProvider } from './providers/cache-provider'
-import { scrapeCodersMuMeetups } from './providers/codersmu-scraper'
-import type { Meetup, MeetupCache, MeetupProvider, MeetupSession, MeetupSpeaker } from './types'
-
-type MeetupListState = 'upcoming' | 'past' | 'all'
+import {
+  buildCalendarUrls,
+  buildIcs,
+  getMeetup,
+  getMeetupsForList,
+  refreshDefaultMeetupCache,
+  resolveDefaultMeetupProvider,
+} from '@codersmu/core'
+import type { Meetup, MeetupListState, MeetupSession, MeetupSpeaker } from '@codersmu/core'
 
 interface CliOptions {
   json: boolean
@@ -133,50 +135,6 @@ function renderMeetupShortLine(meetup: Meetup): void {
   console.log(`${formatMeetupDay(meetup.startsAt, meetup.timezone)}  ${meetup.title}  (${meetup.slug})  ${location}`)
 }
 
-function buildCalendarUrls(meetup: Meetup): { google: string, outlook: string } {
-  const title = encodeURIComponent(meetup.title)
-  const detailsSource = meetup.links.meetup
-    ? `${meetup.summary}\n\nMore details: ${meetup.links.meetup}`
-    : meetup.summary
-  const details = encodeURIComponent(detailsSource)
-  const location = encodeURIComponent(joinParts([meetup.location.name, meetup.location.address, meetup.location.city]))
-  const start = meetup.startsAt.replace(/[-:]/g, '').replace('.000', '')
-  const end = meetup.endsAt.replace(/[-:]/g, '').replace('.000', '')
-
-  return {
-    google: `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${start}/${end}&details=${details}&location=${location}`,
-    outlook: `https://outlook.live.com/calendar/0/deeplink/compose?subject=${title}&startdt=${encodeURIComponent(meetup.startsAt)}&enddt=${encodeURIComponent(meetup.endsAt)}&body=${details}&location=${location}`,
-  }
-}
-
-function buildIcs(meetup: Meetup): string {
-  const escape = (value: string): string => value
-    .replaceAll('\\', '\\\\')
-    .replaceAll(';', '\\;')
-    .replaceAll(',', '\\,')
-    .replaceAll('\n', '\\n')
-
-  const toUtcStamp = (value: string): string =>
-    new Date(value).toISOString().replace(/[-:]/g, '').replace('.000', '')
-
-  return [
-    'BEGIN:VCALENDAR',
-    'VERSION:2.0',
-    'PRODID:-//coders.mu//CLI//EN',
-    'BEGIN:VEVENT',
-    `UID:${meetup.id}@coders.mu`,
-    `DTSTAMP:${toUtcStamp(new Date().toISOString())}`,
-    `DTSTART:${toUtcStamp(meetup.startsAt)}`,
-    `DTEND:${toUtcStamp(meetup.endsAt)}`,
-    `SUMMARY:${escape(meetup.title)}`,
-    `DESCRIPTION:${escape(meetup.links.meetup ? `${meetup.summary}\n\nMore details: ${meetup.links.meetup}` : meetup.summary)}`,
-    `LOCATION:${escape(joinParts([meetup.location.name, meetup.location.address, meetup.location.city]))}`,
-    'END:VEVENT',
-    'END:VCALENDAR',
-    '',
-  ].join('\r\n')
-}
-
 function renderSession(session: MeetupSession): string {
   const speakers = session.speakers.map((speaker) => speaker.name).join(', ')
   return speakers ? `- ${session.title} (${speakers})` : `- ${session.title}`
@@ -283,54 +241,8 @@ function parseLimit(value?: string): number | undefined {
   return parsed
 }
 
-async function resolveProvider(): Promise<MeetupProvider> {
-  const cached = await readMeetupCache()
-  const shouldForceRefresh = process.env.CODERSMU_FORCE_REFRESH === '1'
-
-  if (cached && !shouldForceRefresh && isMeetupCacheFresh(cached)) {
-    return new CacheMeetupProvider(cached)
-  }
-
-  try {
-    const cache = await scrapeCodersMuMeetups()
-    await writeMeetupCache(cache)
-    return new CacheMeetupProvider(cache)
-  }
-  catch (error) {
-    if (cached) {
-      return new CacheMeetupProvider(cached)
-    }
-
-    throw error
-  }
-}
-
-async function refreshCache(): Promise<{ cache: MeetupCache, cacheFile: string }> {
-  const cache = await scrapeCodersMuMeetups()
-  const cacheFile = await writeMeetupCache(cache)
-  return { cache, cacheFile }
-}
-
-function sortMeetupsAscending(meetups: Meetup[]): Meetup[] {
-  return [...meetups].sort((left, right) => Date.parse(left.startsAt) - Date.parse(right.startsAt))
-}
-
-async function getMeetupsForList(provider: MeetupProvider, state: MeetupListState): Promise<Meetup[]> {
-  if (state === 'past') {
-    return getPastMeetups(provider)
-  }
-
-  if (state === 'all') {
-    return getSortedMeetups(provider)
-  }
-
-  const now = Date.now()
-  return sortMeetupsAscending(await provider.listMeetups())
-    .filter((meetup) => Date.parse(meetup.endsAt) >= now)
-}
-
 async function handleCacheRefresh(options: CliOptions): Promise<void> {
-  const { cache, cacheFile } = await refreshCache()
+  const { cache, cacheFile } = await refreshDefaultMeetupCache()
   const nextMeetup = [...cache.meetups]
     .sort((left, right) => Date.parse(left.startsAt) - Date.parse(right.startsAt))
     .find((meetup) => Date.parse(meetup.endsAt) >= Date.now())
@@ -362,7 +274,7 @@ async function handleCacheRefresh(options: CliOptions): Promise<void> {
 }
 
 async function handleMeetupList(options: CliOptions): Promise<void> {
-  const provider = await resolveProvider()
+  const provider = await resolveDefaultMeetupProvider()
   const state = parseMeetupListState(options.state)
   const limit = parseLimit(options.limit)
   const meetups = await getMeetupsForList(provider, state)
@@ -400,7 +312,7 @@ async function handleMeetupList(options: CliOptions): Promise<void> {
 }
 
 async function handleMeetupView(selector: string, options: CliOptions): Promise<void> {
-  const provider = await resolveProvider()
+  const provider = await resolveDefaultMeetupProvider()
   const meetup = await getMeetup(provider, selector)
   if (!meetup) {
     console.error(`Meetup not found: ${selector}`)
@@ -422,7 +334,7 @@ async function handleMeetupView(selector: string, options: CliOptions): Promise<
 }
 
 async function handleMeetupCalendar(selector: string, options: CliOptions): Promise<void> {
-  const provider = await resolveProvider()
+  const provider = await resolveDefaultMeetupProvider()
   const meetup = await getMeetup(provider, selector)
   if (!meetup) {
     console.error(`Meetup not found: ${selector}`)
