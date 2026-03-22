@@ -28,6 +28,7 @@
       "title": "Next Meetup",
       "subtitle": "Coders.mu",
       "description": "Show the current or next Coders.mu meetup.",
+      "icon": "extension-icon.png",
       "mode": "view"
     },
     {
@@ -35,6 +36,7 @@
       "title": "Meetups",
       "subtitle": "Coders.mu",
       "description": "Browse upcoming and past Coders.mu meetups.",
+      "icon": "extension-icon.png",
       "mode": "view"
     }
   ],
