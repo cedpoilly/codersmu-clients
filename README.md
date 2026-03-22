@@ -112,7 +112,7 @@ This roadmap is centered on timely awareness:
 | Pillar | Direction | Presence Value |
 | --- | --- | --- |
 | Social MCP (Model Context Protocol) Server | Bring `coders.mu` into AI coding agents so meetup information can appear directly inside the development workflow. A strong early use case is "shoulder-tap" notifications for new meetups, RSVP openings, and location changes. | Developers stay aware of community activity while already working with coding agents instead of discovering updates too late. |
-| Native Desktop Apps (macOS/Windows/Linux) | Build dedicated desktop clients with Wails/Go to support system-level notifications and tray-icon alerts across platforms. | Developers get durable, OS-native signals for time-sensitive RSVP windows and event changes without keeping the website open. |
+| Native Desktop Apps (macOS/Windows/Linux) | Build dedicated desktop clients with system-level notifications and tray-icon alerts across platforms. | Developers get durable, OS-native signals for time-sensitive RSVP windows and event changes without keeping the website open. |
 | Browser Extensions | Run active background polling with browser-native notifications for meetup updates and other community changes. | Developers who already spend most of their day in the browser can stay informed in-flow, with minimal friction and no manual refresh habit. |
 
 Taken together, these clients aim to make Coders.mu ambient in the developer workflow: visible at the right time, in the right place, without requiring repeated manual checking.
