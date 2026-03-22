@@ -2,20 +2,36 @@
 
 Exploratory workspace for Coders.mu clients.
 
-This repository is still in the exploratory phase. The command surface, internal package layout, scraper-backed data source, and integration strategy can all change while the product direction is still being tested.
+This repository is still in the exploratory phase. The CLI surface, internal package layout, scraper-backed data source, and integration strategy can all change while the product direction is still being tested.
 
-Today, the installable client is the CLI at the repository root. The shared domain logic lives in `packages/core`, and `apps/raycast` contains an npm-managed Raycast extension skeleton.
+## Current Clients
 
-The CLI exposes two commands: `codersmu` and `cmu`.
+### CLI
 
-## Status
+The primary client today is the CLI at the repository root.
 
-- exploratory prototype, not a stable release
+- installable from GitHub
+- commands exposed as `codersmu` and `cmu`
+- live data currently comes from scraping public pages
+- intended as a prototype, not a stable release
+
+### Raycast
+
+The Raycast client lives in `apps/raycast`.
+
+- local extension prototype
+- currently shells out to the CLI instead of calling a stable API directly
+- good enough for local experimentation
+- not published to the Raycast Store yet
+
+## Overall Status
+
+- exploratory prototype, not a stable product
 - GitHub-first distribution, no npm release yet
-- live data currently comes from scraping public pages, so breakage is possible if the site markup changes
-- Raycast support exists as a local extension skeleton and is not store-ready yet
+- scraper-backed data source can break if the website markup changes
+- future HTTP/API integration is expected to replace the scraper
 
-## Install
+## CLI
 
 Install from the GitHub repository:
 
@@ -33,26 +49,9 @@ codersmu next
 cmu next
 ```
 
-GitHub installs compile the CLI from source during installation, so Node `>=20.11` is still required.
+GitHub installs compile the CLI from source during installation, so Node `>=20.11` is required.
 
-There is no native binary in the release flow yet. If we decide to support people without Node later, we can attach macOS/Linux/Windows binaries to GitHub Releases as a separate distribution channel.
-
-## Workspace Layout
-
-```text
-.
-├── apps/
-│   └── raycast/
-├── packages/
-│   └── core/
-└── src/
-```
-
-- `src/`: the installable CLI package
-- `packages/core`: shared meetup fetching, cache, calendar, and provider logic
-- `apps/raycast`: npm-managed Raycast extension app
-
-## Commands
+Common commands:
 
 ```bash
 codersmu next
@@ -69,11 +68,53 @@ cmu next
 cmu previous
 ```
 
-The CLI refreshes public meetup data automatically and uses a local cache internally. Users do not need to manage the cache.
+The CLI refreshes public meetup data automatically and uses a local cache internally. Users do not need to manage the cache themselves.
 
 Use `--short` or `-s` for a more compact human-readable listing.
 
+## Raycast
+
+The Raycast extension is currently a thin client on top of the CLI.
+
+To run it locally:
+
+```bash
+pnpm build
+cd apps/raycast
+npm install
+npm run dev
+```
+
+Then point the Raycast extension preference `CLI Path` to either:
+
+- `cmu`
+- `<repo-root>/dist/cli.mjs`
+
+Current Raycast commands:
+
+- `Next Meetup`
+- `Meetups`
+
+For more Raycast-specific notes, see `apps/raycast/README.md`.
+
+## Workspace Layout
+
+```text
+.
+├── apps/
+│   └── raycast/
+├── packages/
+│   └── core/
+└── src/
+```
+
+- `src/`: installable CLI package
+- `packages/core`: shared meetup fetching, cache, calendar, and provider logic
+- `apps/raycast`: npm-managed Raycast extension app
+
 ## Development
+
+From the repository root:
 
 ```bash
 pnpm install
@@ -83,20 +124,11 @@ node dist/cli.mjs previous
 node dist/cli.mjs list
 node dist/cli.mjs past --short
 node dist/cli.mjs view next
-```
-
-## GitHub Repo
-
-This repository is intended to stay GitHub-first until the CLI surface and the future publisher API are clearer. Treat tags as prototype checkpoints, not stable releases.
-
-Local release check:
-
-```bash
 pnpm release:check
 ```
 
-GitHub Actions currently exist for CI and a future npm release path, but npm publishing is intentionally deferred while the project remains exploratory.
+GitHub Actions already exist for CI and a future npm release path, but npm publishing is intentionally deferred while the project remains exploratory.
 
-## Future API integration
+## Future API Integration
 
-Replace the current scraper-backed provider with an HTTP-backed provider that maps the publisher endpoint to the shared `Meetup` type. The rest of the commands can stay unchanged.
+The expected next architectural step is replacing the current scraper-backed provider with an HTTP-backed provider that maps the publisher endpoint to the shared `Meetup` type. The CLI and Raycast clients should then consume that shared model without changing their user-facing behavior too much.
