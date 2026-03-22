@@ -1,0 +1,52 @@
+{
+  "name": "codersmu",
+  "version": "0.1.0",
+  "description": "CLI for consulting public meetup data from coders.mu",
+  "type": "module",
+  "bin": {
+    "codersmu": "./dist/cli.mjs",
+    "cmu": "./dist/cli.mjs"
+  },
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.mts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.mts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "sideEffects": false,
+  "engines": {
+    "node": ">=20.11"
+  },
+  "scripts": {
+    "build": "tsdown",
+    "dev": "tsdown --watch",
+    "prepare": "npm run build",
+    "typecheck": "tsc --noEmit",
+    "check": "pnpm typecheck && pnpm build",
+    "release:check": "pnpm check && npm pack --dry-run"
+  },
+  "keywords": [
+    "codersmu",
+    "coders.mu",
+    "meetup",
+    "cli"
+  ],
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
+  "devDependencies": {
+    "@types/node": "^24.5.2",
+    "tsdown": "^0.16.6",
+    "typescript": "^5.9.2"
+  }
+}
