@@ -97,6 +97,26 @@ Current Raycast commands:
 
 For more Raycast-specific notes, see `apps/raycast/README.md`.
 
+## Future Roadmap
+
+### Community Presence and In-Flow Awareness
+
+The broader goal of `codersmu-clients` is not just to expose website data in different shells. It is to make sure developers stay present and informed about community events without having to manually check the website for updates.
+
+This roadmap is centered on timely awareness:
+
+- new meetup announcements
+- RSVP openings and other time-sensitive windows
+- location or schedule changes that people should notice quickly
+
+| Pillar | Direction | Presence Value |
+| --- | --- | --- |
+| Social MCP (Model Context Protocol) Server | Bring `coders.mu` into AI coding agents so meetup information can appear directly inside the development workflow. A strong early use case is "shoulder-tap" notifications for new meetups, RSVP openings, and location changes. | Developers stay aware of community activity while already working with coding agents instead of discovering updates too late. |
+| Native Desktop Apps (macOS/Windows/Linux) | Build dedicated desktop clients with Wails/Go to support system-level notifications and tray-icon alerts across platforms. | Developers get durable, OS-native signals for time-sensitive RSVP windows and event changes without keeping the website open. |
+| Browser Extensions | Run active background polling with browser-native notifications for meetup updates and other community changes. | Developers who already spend most of their day in the browser can stay informed in-flow, with minimal friction and no manual refresh habit. |
+
+Taken together, these clients aim to make Coders.mu ambient in the developer workflow: visible at the right time, in the right place, without requiring repeated manual checking.
+
 ## Workspace Layout
 
 ```text
