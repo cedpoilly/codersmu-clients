@@ -1,6 +1,8 @@
 import { getPreferenceValues } from "@raycast/api";
 import { usePromise } from "@raycast/utils";
 import { execFile } from "node:child_process";
+import { fileURLToPath } from "node:url";
+import { dirname, resolve } from "node:path";
 import { promisify } from "node:util";
 
 import type { Meetup } from "./types";
@@ -10,6 +12,8 @@ interface Preferences {
 }
 
 const execFileAsync = promisify(execFile);
+const currentDir = dirname(fileURLToPath(import.meta.url));
+const defaultCliScriptPath = resolve(currentDir, "../../../../dist/cli.mjs");
 
 function getCliScriptPath(): string {
   const preferences = getPreferenceValues<Preferences>();
@@ -18,7 +22,7 @@ function getCliScriptPath(): string {
     return configuredPath;
   }
 
-  return "/Users/cedricpoilly/code/codersmu-cli/dist/cli.mjs";
+  return defaultCliScriptPath;
 }
 
 async function runCliJson<T>(args: string[]): Promise<T> {

@@ -1,7 +1,7 @@
 {
   "name": "codersmu",
-  "version": "0.1.0",
-  "description": "CLI client for coders.mu in the codersmu-clients workspace",
+  "version": "0.0.0-prototype.1",
+  "description": "Exploratory CLI client for coders.mu in the codersmu-clients workspace",
   "type": "module",
   "bin": {
     "codersmu": "./dist/cli.mjs",
@@ -33,6 +33,14 @@
     "meetup",
     "cli"
   ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cedpoilly/codersmu-clients.git"
+  },
+  "homepage": "https://github.com/cedpoilly/codersmu-clients#readme",
+  "bugs": {
+    "url": "https://github.com/cedpoilly/codersmu-clients/issues"
+  },
   "license": "MIT",
   "publishConfig": {
     "access": "public"

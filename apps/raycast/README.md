@@ -4,7 +4,7 @@ Raycast extension for browsing Coders.mu meetups from Raycast.
 
 ## Current Setup
 
-This skeleton currently shells out to the Coders.mu CLI instead of calling the website directly. That keeps the extension thin while the CLI and data model are still evolving.
+This extension is still exploratory. It currently shells out to the Coders.mu CLI instead of calling the website directly. That keeps the extension thin while the CLI and data model are still evolving.
 
 Before running the extension:
 
@@ -12,17 +12,16 @@ Before running the extension:
 2. Replace the placeholder `author` in `package.json` with your real Raycast username before publishing or running `npm run lint`.
 3. Point the extension to the CLI executable through the `CLI Path` preference, or make sure `cmu` is available on your `PATH`.
 
-Examples:
+Examples from the repository root:
 
 ```bash
-cd /Users/cedricpoilly/code/codersmu-cli
 pnpm build
 ```
 
 Use one of these values in the Raycast preference:
 
 - `cmu`
-- `/Users/cedricpoilly/code/codersmu-cli/dist/cli.mjs`
+- `<repo-root>/dist/cli.mjs`
 
 ## Development
 

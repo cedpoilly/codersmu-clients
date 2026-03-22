@@ -99,7 +99,7 @@ function extractDataPageJson(html: string): string {
 async function fetchText(url: string): Promise<string> {
   const response = await fetch(url, {
     headers: {
-      'user-agent': 'codersmu-cli/0.1.0 (+https://coders.mu)',
+      'user-agent': 'codersmu-clients/0.0.0-prototype.1 (+https://coders.mu)',
       'accept': 'text/html,application/xhtml+xml',
     },
   })

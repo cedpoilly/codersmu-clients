@@ -1,25 +1,34 @@
 # codersmu-clients
 
-Workspace for Coders.mu clients.
+Exploratory workspace for Coders.mu clients.
+
+This repository is still in the exploratory phase. The command surface, internal package layout, scraper-backed data source, and integration strategy can all change while the product direction is still being tested.
 
 Today, the installable client is the CLI at the repository root. The shared domain logic lives in `packages/core`, and `apps/raycast` contains an npm-managed Raycast extension skeleton.
 
 The CLI exposes two commands: `codersmu` and `cmu`.
 
+## Status
+
+- exploratory prototype, not a stable release
+- GitHub-first distribution, no npm release yet
+- live data currently comes from scraping public pages, so breakage is possible if the site markup changes
+- Raycast support exists as a local extension skeleton and is not store-ready yet
+
 ## Install
 
-From GitHub:
+Install from the GitHub repository:
 
 ```bash
-npm install -g github:<owner>/<repo>#main
+npm install -g github:cedpoilly/codersmu-clients#main
 codersmu next
 cmu next
 ```
 
-From a GitHub tag:
+Install from a tagged prototype snapshot:
 
 ```bash
-npm install -g github:<owner>/<repo>#v0.0.0-prototype.1
+npm install -g github:cedpoilly/codersmu-clients#v0.0.0-prototype.1
 codersmu next
 cmu next
 ```
@@ -76,7 +85,9 @@ node dist/cli.mjs past --short
 node dist/cli.mjs view next
 ```
 
-## Release
+## GitHub Repo
+
+This repository is intended to stay GitHub-first until the CLI surface and the future publisher API are clearer. Treat tags as prototype checkpoints, not stable releases.
 
 Local release check:
 
@@ -84,17 +95,7 @@ Local release check:
 pnpm release:check
 ```
 
-GitHub Actions:
-
-- `.github/workflows/ci.yml` runs install, typecheck, build, and `npm pack --dry-run`
-- `.github/workflows/release.yml` publishes to npm when a GitHub Release is published
-
-Before the first public release:
-
-- create the GitHub repository and set it as this repo's remote
-- add `repository`, `homepage`, and `bugs` fields to `package.json`
-- create an npm access token and store it as `NPM_TOKEN` in the GitHub repository secrets
-- decide whether to keep distribution GitHub-only or publish the CLI package to npm
+GitHub Actions currently exist for CI and a future npm release path, but npm publishing is intentionally deferred while the project remains exploratory.
 
 ## Future API integration
 

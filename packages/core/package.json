@@ -1,7 +1,7 @@
 {
   "name": "@codersmu/core",
-  "version": "0.1.0",
-  "description": "Shared Coders.mu client logic",
+  "version": "0.0.0-prototype.1",
+  "description": "Exploratory shared Coders.mu client logic",
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.mjs",
@@ -17,6 +17,14 @@
     "dist"
   ],
   "sideEffects": false,
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cedpoilly/codersmu-clients.git"
+  },
+  "homepage": "https://github.com/cedpoilly/codersmu-clients#readme",
+  "bugs": {
+    "url": "https://github.com/cedpoilly/codersmu-clients/issues"
+  },
   "scripts": {
     "build": "tsdown",
     "dev": "tsdown --watch",
