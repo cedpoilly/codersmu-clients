@@ -40,5 +40,9 @@ export interface Meetup {
   speakers: MeetupSpeaker[];
   sessions: MeetupSession[];
   sponsors: MeetupSponsor[];
+  attendeeCount?: number;
+  seatsAvailable?: number | null;
+  rsvpCount?: number;
+  acceptingRsvp?: boolean;
   links: MeetupLinks;
 }
