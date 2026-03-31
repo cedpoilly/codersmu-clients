@@ -1,5 +1,7 @@
-## [Initial Skeleton] - {PR_MERGE_DATE}
+## [Initial Release] - {PR_MERGE_DATE}
 
-- Added a Raycast extension skeleton with `Next Meetup` and `Meetups` commands.
-- Wired the extension to the Coders.mu CLI through JSON output.
-- Added store-oriented metadata, onboarding docs, and icon assets.
+- Added `Next Meetup` and `Meetups` commands for browsing Coders.mu events directly inside Raycast.
+- Added richer meetup details, including RSVP links, recordings, slides, maps, parking links, and calendar export actions.
+- Grouped meetup browsing into live, upcoming, and history sections with improved empty and error states.
+- Removed the CLI dependency and packaged the shared Coders.mu core logic through a vendored snapshot for Store-ready builds.
+- Added Store-oriented metadata, icon assets, and release documentation.

@@ -20,7 +20,7 @@ The primary client today is the CLI at the repository root.
 The Raycast client lives in `apps/raycast`.
 
 - local extension prototype
-- currently shells out to the CLI instead of calling a stable API directly
+- uses the shared scraper-backed core logic directly
 - good enough for local experimentation
 - not published to the Raycast Store yet
 
@@ -57,13 +57,19 @@ Common commands:
 codersmu next
 codersmu previous
 codersmu list
+codersmu ls --short
 codersmu past --short
+codersmu refresh
+codersmu next --refresh
 codersmu list --state past --limit 5
 codersmu view next
+codersmu show next
 codersmu view previous
 codersmu view 2026-04-18-the-april-meetup
 codersmu calendar next --write ./next-meetup.ics
 codersmu calendar previous --write ./previous-meetup.ics
+codersmu --help
+codersmu --version
 cmu next
 cmu previous
 ```
@@ -71,29 +77,27 @@ cmu previous
 The CLI refreshes public meetup data automatically and uses a local cache internally. Users do not need to manage the cache themselves.
 
 Use `--short` or `-s` for a more compact human-readable listing.
+Use `--refresh` on read commands to bypass the local cache for that invocation.
+Use `ls` and `show` as short aliases for `list` and `view`.
 
 ## Raycast
 
-The Raycast extension is currently a thin client on top of the CLI.
+The Raycast extension currently uses the same shared scraper-backed core layer as the CLI.
 
 To run it locally:
 
 ```bash
-pnpm build
 cd apps/raycast
 npm install
 npm run dev
 ```
 
-Then point the Raycast extension preference `CLI Path` to either:
-
-- `cmu`
-- `<repo-root>/dist/cli.mjs`
-
 Current Raycast commands:
 
 - `Next Meetup`
 - `Meetups`
+
+The `Meetups` command groups results into live, upcoming, and past sections and exposes quick actions for RSVP links, recordings, slides, maps, and calendar exports.
 
 For more Raycast-specific notes, see `apps/raycast/README.md`.
 
