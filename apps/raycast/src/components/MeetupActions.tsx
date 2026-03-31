@@ -1,8 +1,7 @@
 import { Action, ActionPanel, Clipboard, Icon } from "@raycast/api";
 import type { ReactNode } from "react";
 
-import { buildCalendarUrls } from "../lib/calendar";
-import type { Meetup } from "../lib/types";
+import { buildCalendarUrls, buildIcs, type Meetup } from "../lib/core";
 
 interface MeetupActionsProps {
   meetup: Meetup;
@@ -36,6 +35,24 @@ export function MeetupActions({
         {meetup.links.rsvp ? (
           <Action.OpenInBrowser title="Open RSVP" url={meetup.links.rsvp} />
         ) : null}
+        {meetup.links.recording ? (
+          <Action.OpenInBrowser
+            title="Open Recording"
+            url={meetup.links.recording}
+          />
+        ) : null}
+        {meetup.links.slides ? (
+          <Action.OpenInBrowser title="Open Slides" url={meetup.links.slides} />
+        ) : null}
+        {meetup.links.map ? (
+          <Action.OpenInBrowser title="Open Map" url={meetup.links.map} />
+        ) : null}
+        {meetup.links.parking ? (
+          <Action.OpenInBrowser
+            title="Open Parking"
+            url={meetup.links.parking}
+          />
+        ) : null}
         <Action.OpenInBrowser
           title="Add to Google Calendar"
           url={calendar.google}
@@ -55,6 +72,33 @@ export function MeetupActions({
             content={meetup.links.meetup}
           />
         ) : null}
+        {meetup.links.rsvp ? (
+          <Action.CopyToClipboard
+            title="Copy RSVP URL"
+            content={meetup.links.rsvp}
+          />
+        ) : null}
+        {meetup.links.recording ? (
+          <Action.CopyToClipboard
+            title="Copy Recording URL"
+            content={meetup.links.recording}
+          />
+        ) : null}
+        {meetup.links.slides ? (
+          <Action.CopyToClipboard
+            title="Copy Slides URL"
+            content={meetup.links.slides}
+          />
+        ) : null}
+        <Action.CopyToClipboard
+          title="Copy Google Calendar URL"
+          content={calendar.google}
+        />
+        <Action.CopyToClipboard
+          title="Copy Outlook Calendar URL"
+          content={calendar.outlook}
+        />
+        <Action.CopyToClipboard title="Copy ICS" content={buildIcs(meetup)} />
         <Action
           title="Copy Summary"
           icon={Icon.Clipboard}
