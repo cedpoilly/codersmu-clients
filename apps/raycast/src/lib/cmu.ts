@@ -1,4 +1,6 @@
-import { usePromise } from "@raycast/utils";
+import { environment } from "@raycast/api";
+import { showFailureToast, usePromise } from "@raycast/utils";
+import { join } from "node:path";
 import { useState } from "react";
 
 import {
@@ -7,6 +9,8 @@ import {
   resolveDefaultMeetupProvider,
 } from "./core";
 import type { Meetup } from "./core";
+
+const extensionCacheFile = join(environment.supportPath, "meetups.json");
 
 function getMeetupNotFoundMessage(selector: string): string {
   if (selector === "next" || selector === "current") {
@@ -20,22 +24,58 @@ function getMeetupNotFoundMessage(selector: string): string {
   return `Could not find meetup "${selector}".`;
 }
 
+export class MeetupNotFoundError extends Error {
+  constructor(readonly selector: string) {
+    super(getMeetupNotFoundMessage(selector));
+    this.name = "MeetupNotFoundError";
+  }
+}
+
+export function isMeetupNotFoundError(
+  error: unknown,
+): error is MeetupNotFoundError {
+  return error instanceof MeetupNotFoundError;
+}
+
+export function isUpcomingMeetupNotFoundError(
+  error: unknown,
+): error is MeetupNotFoundError {
+  return (
+    isMeetupNotFoundError(error) &&
+    (error.selector === "next" || error.selector === "current")
+  );
+}
+
+function configureExtensionCache() {
+  process.env.CODERSMU_CACHE_FILE = extensionCacheFile;
+}
+
 async function loadMeetup(
   selector: string,
   forceRefresh = false,
 ): Promise<Meetup> {
-  const provider = await resolveDefaultMeetupProvider({ forceRefresh });
+  configureExtensionCache();
+
+  const provider = await resolveDefaultMeetupProvider({
+    forceRefresh,
+    allowStaleOnError: !forceRefresh,
+  });
   const meetup = await getMeetup(provider, selector);
 
   if (!meetup) {
-    throw new Error(getMeetupNotFoundMessage(selector));
+    throw new MeetupNotFoundError(selector);
   }
 
   return meetup;
 }
 
 async function loadMeetups(forceRefresh = false): Promise<Meetup[]> {
-  const provider = await resolveDefaultMeetupProvider({ forceRefresh });
+  configureExtensionCache();
+
+  const provider = await resolveDefaultMeetupProvider({
+    forceRefresh,
+    allowStaleOnError: !forceRefresh,
+  });
   return getMeetupsForList(provider, "all");
 }
 
@@ -45,10 +85,16 @@ export function useMeetup(selector: string) {
     (target: string, nonce: number) => loadMeetup(target, nonce > 0),
     [selector, refreshNonce],
     {
-      failureToastOptions: {
-        title: "Could not load meetup",
-        message:
-          "Coders.mu is unavailable right now and there is no cached meetup data yet.",
+      onError: async (error) => {
+        if (isMeetupNotFoundError(error)) {
+          return;
+        }
+
+        await showFailureToast(error, {
+          title: "Could not load meetup",
+          message:
+            "Coders.mu is unavailable right now and there is no cached meetup data yet.",
+        });
       },
     },
   );
@@ -67,10 +113,12 @@ export function useMeetups() {
     (nonce: number) => loadMeetups(nonce > 0),
     [refreshNonce],
     {
-      failureToastOptions: {
-        title: "Could not load meetups",
-        message:
-          "Coders.mu is unavailable right now and there is no cached meetup data yet.",
+      onError: async (error) => {
+        await showFailureToast(error, {
+          title: "Could not load meetups",
+          message:
+            "Coders.mu is unavailable right now and there is no cached meetup data yet.",
+        });
       },
     },
   );

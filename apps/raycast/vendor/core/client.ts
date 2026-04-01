@@ -4,13 +4,19 @@ import { CacheMeetupProvider } from './providers/cache-provider'
 import { scrapeCodersMuMeetups } from './providers/codersmu-scraper'
 import type { Meetup, MeetupCache, MeetupListState, MeetupProvider } from './types'
 
+interface ResolveDefaultMeetupProviderOptions {
+  forceRefresh?: boolean
+  allowStaleOnError?: boolean
+}
+
 function sortMeetupsAscending(meetups: Meetup[]): Meetup[] {
   return [...meetups].sort((left, right) => Date.parse(left.startsAt) - Date.parse(right.startsAt))
 }
 
-export async function resolveDefaultMeetupProvider(options?: { forceRefresh?: boolean }): Promise<MeetupProvider> {
+export async function resolveDefaultMeetupProvider(options?: ResolveDefaultMeetupProviderOptions): Promise<MeetupProvider> {
   const cached = await readMeetupCache()
   const shouldForceRefresh = options?.forceRefresh ?? process.env.CODERSMU_FORCE_REFRESH === '1'
+  const allowStaleOnError = options?.allowStaleOnError ?? !shouldForceRefresh
 
   if (cached && !shouldForceRefresh && isMeetupCacheFresh(cached)) {
     return new CacheMeetupProvider(cached)
@@ -22,7 +28,7 @@ export async function resolveDefaultMeetupProvider(options?: { forceRefresh?: bo
     return new CacheMeetupProvider(cache)
   }
   catch (error) {
-    if (cached) {
+    if (cached && allowStaleOnError) {
       return new CacheMeetupProvider(cached)
     }
 

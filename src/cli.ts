@@ -46,7 +46,10 @@ function colorize(color: keyof typeof COLORS, value: string): string {
 }
 
 async function resolveMeetupProvider(options: CliOptions): Promise<MeetupProvider> {
-  return resolveDefaultMeetupProvider({ forceRefresh: options.refresh })
+  return resolveDefaultMeetupProvider({
+    forceRefresh: options.refresh,
+    allowStaleOnError: !options.refresh,
+  })
 }
 
 function renderVersion(): void {
