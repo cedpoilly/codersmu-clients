@@ -4,6 +4,7 @@ const SOURCE_URL = 'https://coders.mu/meetups/'
 const DETAIL_URL_PREFIX = 'https://coders.mu/meetup/'
 const MAURITIUS_UTC_OFFSET = '+04:00'
 const DEFAULT_DURATION_HOURS = 4
+const FETCH_TIMEOUT_MS = 10_000
 
 interface RawSpeaker {
   name: string
@@ -97,12 +98,24 @@ function extractDataPageJson(html: string): string {
 }
 
 async function fetchText(url: string): Promise<string> {
-  const response = await fetch(url, {
-    headers: {
-      'user-agent': 'codersmu-clients/0.0.0-prototype.1 (+https://coders.mu)',
-      'accept': 'text/html,application/xhtml+xml',
-    },
-  })
+  let response: Response
+
+  try {
+    response = await fetch(url, {
+      headers: {
+        'user-agent': 'codersmu-clients/0.0.0-prototype.1 (+https://coders.mu)',
+        'accept': 'text/html,application/xhtml+xml',
+      },
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+    })
+  }
+  catch (error) {
+    if (error instanceof Error && (error.name === 'AbortError' || error.name === 'TimeoutError')) {
+      throw new Error(`Request timed out for ${url} after ${FETCH_TIMEOUT_MS}ms.`)
+    }
+
+    throw error
+  }
 
   if (!response.ok) {
     throw new Error(`Request failed for ${url}: ${response.status} ${response.statusText}`)
