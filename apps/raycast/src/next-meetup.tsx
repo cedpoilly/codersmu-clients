@@ -2,7 +2,8 @@ import { Action, ActionPanel, Detail, Icon } from "@raycast/api";
 
 import { MeetupDetail } from "./components/MeetupDetail";
 import MeetupsCommand from "./meetups";
-import { isUpcomingMeetupNotFoundError, useMeetup } from "./lib/cmu";
+import { useMeetup } from "./lib/cmu";
+import { isUpcomingMeetupNotFoundError } from "./lib/errors";
 
 export default function NextMeetupCommand() {
   const { data, error, isLoading, revalidate } = useMeetup("next");
