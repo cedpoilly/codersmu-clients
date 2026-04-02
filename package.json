@@ -22,6 +22,7 @@
     "build:all": "pnpm build:core && pnpm build",
     "dev": "tsdown --watch",
     "prepare": "npm run build",
+    "test": "pnpm --filter @codersmu/core test",
     "typecheck": "tsc --noEmit",
     "typecheck:core": "pnpm --filter @codersmu/core typecheck",
     "check": "pnpm typecheck && pnpm --filter @codersmu/core check && pnpm build",
@@ -48,6 +49,7 @@
   "devDependencies": {
     "@types/node": "^24.5.2",
     "tsdown": "^0.16.6",
-    "typescript": "^5.9.2"
+    "typescript": "^5.9.2",
+    "vitest": "^4.1.2"
   }
 }

@@ -7,6 +7,7 @@ import { MeetupListMetadata } from "./components/MeetupMetadata";
 import { useMeetups } from "./lib/cmu";
 import {
   formatMeetupDay,
+  getMeetupAudienceLabel,
   getMeetupStatusColor,
   getMeetupStatusIcon,
   meetupKeywords,
@@ -15,13 +16,42 @@ import {
 
 type FilterValue = "all" | "upcoming" | "past";
 
+function getMeetupAccessories(
+  meetup: Parameters<typeof getMeetupStatusIcon>[0],
+) {
+  const accessories: List.Item.Accessory[] = [
+    {
+      tag: {
+        value: formatMeetupDay(meetup.startsAt, meetup.timezone),
+        color:
+          meetup.status === "completed"
+            ? Color.SecondaryText
+            : getMeetupStatusColor(meetup),
+      },
+    },
+  ];
+
+  const audience = getMeetupAudienceLabel(meetup);
+  if (audience) {
+    accessories.unshift({ text: audience });
+  }
+
+  if (meetup.location.city) {
+    accessories.unshift({ text: meetup.location.city });
+  }
+
+  return accessories;
+}
+
 export default function MeetupsCommand() {
   const { data, error, isLoading, revalidate } = useMeetups();
   const [filter, setFilter] = useState<FilterValue>("all");
 
   const meetups = data ?? [];
-  const upcoming = meetups.filter((meetup) => meetup.status !== "completed");
+  const live = meetups.filter((meetup) => meetup.status === "ongoing");
+  const upcoming = meetups.filter((meetup) => meetup.status === "scheduled");
   const past = meetups.filter((meetup) => meetup.status === "completed");
+  const visibleLive = filter === "past" ? [] : live;
   const visibleUpcoming = filter === "past" ? [] : upcoming;
   const visiblePast = filter === "upcoming" ? [] : past;
 
@@ -48,8 +78,38 @@ export default function MeetupsCommand() {
       {error && meetups.length === 0 ? (
         <List.EmptyView
           title="Could not load meetups"
-          description="Check the Coders.mu CLI path in the extension preferences."
+          description="Check your network connection or try again once Coders.mu is reachable."
         />
+      ) : null}
+
+      {visibleLive.length ? (
+        <List.Section title="Live" subtitle={String(visibleLive.length)}>
+          {visibleLive.map((meetup) => (
+            <List.Item
+              key={meetup.id}
+              title={meetup.title}
+              subtitle={meetup.slug}
+              icon={getMeetupStatusIcon(meetup)}
+              accessories={getMeetupAccessories(meetup)}
+              keywords={meetupKeywords(meetup)}
+              detail={
+                <List.Item.Detail
+                  markdown={renderMeetupMarkdown(meetup)}
+                  metadata={<MeetupListMetadata meetup={meetup} />}
+                />
+              }
+              actions={
+                <MeetupActions
+                  meetup={meetup}
+                  onRefresh={revalidate}
+                  detailTarget={
+                    <MeetupDetail meetup={meetup} onRefresh={revalidate} />
+                  }
+                />
+              }
+            />
+          ))}
+        </List.Section>
       ) : null}
 
       {visibleUpcoming.length ? (
@@ -63,14 +123,7 @@ export default function MeetupsCommand() {
               title={meetup.title}
               subtitle={meetup.slug}
               icon={getMeetupStatusIcon(meetup)}
-              accessories={[
-                {
-                  tag: {
-                    value: formatMeetupDay(meetup.startsAt, meetup.timezone),
-                    color: getMeetupStatusColor(meetup),
-                  },
-                },
-              ]}
+              accessories={getMeetupAccessories(meetup)}
               keywords={meetupKeywords(meetup)}
               detail={
                 <List.Item.Detail
@@ -100,14 +153,7 @@ export default function MeetupsCommand() {
               title={meetup.title}
               subtitle={meetup.slug}
               icon={getMeetupStatusIcon(meetup)}
-              accessories={[
-                {
-                  tag: {
-                    value: formatMeetupDay(meetup.startsAt, meetup.timezone),
-                    color: Color.SecondaryText,
-                  },
-                },
-              ]}
+              accessories={getMeetupAccessories(meetup)}
               keywords={meetupKeywords(meetup)}
               detail={
                 <List.Item.Detail
@@ -130,12 +176,19 @@ export default function MeetupsCommand() {
       ) : null}
 
       {!visibleUpcoming.length &&
+      !visibleLive.length &&
       !visiblePast.length &&
       !isLoading &&
       !error ? (
         <List.EmptyView
           title="No meetups in this view"
-          description="Try switching the filter or refreshing the data."
+          description={
+            filter === "upcoming"
+              ? "No live or upcoming meetup is published right now."
+              : filter === "past"
+                ? "No previous meetup is available."
+                : "No meetup data is available right now."
+          }
         />
       ) : null}
     </List>

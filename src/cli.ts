@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import { writeFile } from 'node:fs/promises'
+import { createRequire } from 'node:module'
 import process from 'node:process'
 import { parseArgs } from 'node:util'
 
@@ -12,11 +13,15 @@ import {
   refreshDefaultMeetupCache,
   resolveDefaultMeetupProvider,
 } from '@codersmu/core'
-import type { Meetup, MeetupListState, MeetupSession, MeetupSpeaker } from '@codersmu/core'
+import type { Meetup, MeetupListState, MeetupProvider, MeetupSession, MeetupSpeaker } from '@codersmu/core'
+
+const require = createRequire(import.meta.url)
+const { version: CLI_VERSION } = require('../package.json') as { version: string }
 
 interface CliOptions {
   json: boolean
   short: boolean
+  refresh: boolean
   write?: string
   state?: string
   limit?: string
@@ -29,9 +34,38 @@ const COLORS = {
   yellow: '\x1B[33m',
   bold: '\x1B[1m',
 }
+const DEFAULT_USE_COLOR = Boolean(process.stdout.isTTY) && !('NO_COLOR' in process.env)
+let useColor = DEFAULT_USE_COLOR
 
 function colorize(color: keyof typeof COLORS, value: string): string {
+  if (!useColor) {
+    return value
+  }
+
   return `${COLORS[color]}${value}${COLORS.reset}`
+}
+
+async function resolveMeetupProvider(options: CliOptions): Promise<MeetupProvider> {
+  return resolveDefaultMeetupProvider({
+    forceRefresh: options.refresh,
+    allowStaleOnError: !options.refresh,
+  })
+}
+
+function renderVersion(): void {
+  console.log(`codersmu ${CLI_VERSION}`)
+}
+
+function getMeetupNotFoundMessage(selector: string): string {
+  if (selector === 'next' || selector === 'current') {
+    return 'No upcoming meetup found.'
+  }
+
+  if (selector === 'previous' || selector === 'prev' || selector === 'last') {
+    return 'No previous meetup found.'
+  }
+
+  return `Meetup not found: ${selector}`
 }
 
 function formatMeetupDate(value: string, timezone: string): string {
@@ -176,6 +210,8 @@ function renderMeetupDetail(meetup: Meetup): void {
   printBlock('Links', [
     meetup.links.meetup ? `Meetup page: ${meetup.links.meetup}` : 'Meetup page: n/a',
     meetup.links.rsvp ? `RSVP:        ${meetup.links.rsvp}` : meetup.acceptingRsvp ? 'RSVP:        Open on the website' : 'RSVP:        n/a',
+    meetup.links.recording ? `Recording:   ${meetup.links.recording}` : 'Recording:   n/a',
+    meetup.links.slides ? `Slides:      ${meetup.links.slides}` : 'Slides:      n/a',
     meetup.links.map ? `Map:         ${meetup.links.map}` : 'Map:         n/a',
     meetup.links.parking ? `Parking:     ${meetup.links.parking}` : 'Parking:     n/a',
   ])
@@ -195,20 +231,28 @@ Commands:
   codersmu current           Alias for \`codersmu next\`
   codersmu previous          Show the most recent past meetup in detail
   codersmu list [options]    List meetups
+  codersmu ls [options]      Alias for \`codersmu list\`
   codersmu view <slug|next|previous>  Show one meetup in detail
+  codersmu show <slug|next|previous>  Alias for \`codersmu view\`
   codersmu calendar <slug|next|current|previous> [--write <path>]
                              Print calendar links or write an ICS file
+  codersmu refresh           Refresh the local meetup cache
+  codersmu cache refresh     Refresh the local meetup cache
   codersmu help              Show this help
 
 Convenience:
   codersmu past              Alias for \`codersmu list --state past\`
 
 Options:
+  --help, -h                 Show this help
+  --version, -v              Print the current CLI version
   --json                     Print machine-readable JSON
   --short, -s                Use compact output where supported
+  --refresh                  Force a live refresh before reading meetup data
   --write <path>             Write ICS output to a file
   --state <value>            Meetup list filter: upcoming, past, or all
   --limit <number>           Maximum number of meetups to print for list
+  --no-color                 Disable ANSI colors in terminal output
 `)
 }
 
@@ -274,7 +318,7 @@ async function handleCacheRefresh(options: CliOptions): Promise<void> {
 }
 
 async function handleMeetupList(options: CliOptions): Promise<void> {
-  const provider = await resolveDefaultMeetupProvider()
+  const provider = await resolveMeetupProvider(options)
   const state = parseMeetupListState(options.state)
   const limit = parseLimit(options.limit)
   const meetups = await getMeetupsForList(provider, state)
@@ -312,10 +356,10 @@ async function handleMeetupList(options: CliOptions): Promise<void> {
 }
 
 async function handleMeetupView(selector: string, options: CliOptions): Promise<void> {
-  const provider = await resolveDefaultMeetupProvider()
+  const provider = await resolveMeetupProvider(options)
   const meetup = await getMeetup(provider, selector)
   if (!meetup) {
-    console.error(`Meetup not found: ${selector}`)
+    console.error(getMeetupNotFoundMessage(selector))
     process.exitCode = 1
     return
   }
@@ -334,10 +378,10 @@ async function handleMeetupView(selector: string, options: CliOptions): Promise<
 }
 
 async function handleMeetupCalendar(selector: string, options: CliOptions): Promise<void> {
-  const provider = await resolveDefaultMeetupProvider()
+  const provider = await resolveMeetupProvider(options)
   const meetup = await getMeetup(provider, selector)
   if (!meetup) {
-    console.error(`Meetup not found: ${selector}`)
+    console.error(getMeetupNotFoundMessage(selector))
     process.exitCode = 1
     return
   }
@@ -370,12 +414,23 @@ async function main(): Promise<void> {
     const parsed = parseArgs({
       allowPositionals: true,
       options: {
+        help: {
+          type: 'boolean',
+          short: 'h',
+        },
+        version: {
+          type: 'boolean',
+          short: 'v',
+        },
         json: {
           type: 'boolean',
         },
         short: {
           type: 'boolean',
           short: 's',
+        },
+        refresh: {
+          type: 'boolean',
         },
         write: {
           type: 'string',
@@ -386,12 +441,28 @@ async function main(): Promise<void> {
         limit: {
           type: 'string',
         },
+        'no-color': {
+          type: 'boolean',
+        },
       },
     })
+
+    useColor = DEFAULT_USE_COLOR && !(parsed.values['no-color'] ?? false)
+
+    if (parsed.values.help) {
+      renderHelp()
+      return
+    }
+
+    if (parsed.values.version) {
+      renderVersion()
+      return
+    }
 
     const options: CliOptions = {
       json: parsed.values.json ?? false,
       short: parsed.values.short ?? false,
+      refresh: parsed.values.refresh ?? false,
       write: parsed.values.write,
       state: parsed.values.state,
       limit: parsed.values.limit,
@@ -408,11 +479,23 @@ async function main(): Promise<void> {
         await handleMeetupList(options)
         return
       }
+      case 'ls': {
+        await handleMeetupList(options)
+        return
+      }
       case 'view': {
         await handleMeetupView(args[0] ?? 'next', options)
         return
       }
+      case 'show': {
+        await handleMeetupView(args[0] ?? 'next', options)
+        return
+      }
       case 'scrape': {
+        await handleCacheRefresh(options)
+        return
+      }
+      case 'refresh': {
         await handleCacheRefresh(options)
         return
       }

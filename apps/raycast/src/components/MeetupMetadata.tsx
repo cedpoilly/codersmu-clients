@@ -5,11 +5,12 @@ import {
   formatMeetupRange,
   getMeetupAudienceLabel,
   getMeetupSpeakerNames,
+  getMeetupTagNames,
   getMeetupStatusColor,
   getMeetupStatusIcon,
   getMeetupStatusLabel,
 } from "../lib/format";
-import type { Meetup } from "../lib/types";
+import type { Meetup } from "../lib/core";
 
 function renderStatusTag(meetup: Meetup) {
   return (
@@ -120,6 +121,48 @@ function renderSponsorTagsForList(meetup: Meetup) {
   );
 }
 
+function renderTagTagsForDetail(meetup: Meetup) {
+  const tags = getMeetupTagNames(meetup);
+  if (!tags.length) {
+    return null;
+  }
+
+  return (
+    <Detail.Metadata.TagList title="Tags">
+      {tags.slice(0, 4).map((tag) => (
+        <Detail.Metadata.TagList.Item key={tag} text={tag} />
+      ))}
+      {tags.length > 4 ? (
+        <Detail.Metadata.TagList.Item
+          text={`+${tags.length - 4} more`}
+          color={Color.SecondaryText}
+        />
+      ) : null}
+    </Detail.Metadata.TagList>
+  );
+}
+
+function renderTagTagsForList(meetup: Meetup) {
+  const tags = getMeetupTagNames(meetup);
+  if (!tags.length) {
+    return null;
+  }
+
+  return (
+    <List.Item.Detail.Metadata.TagList title="Tags">
+      {tags.slice(0, 4).map((tag) => (
+        <List.Item.Detail.Metadata.TagList.Item key={tag} text={tag} />
+      ))}
+      {tags.length > 4 ? (
+        <List.Item.Detail.Metadata.TagList.Item
+          text={`+${tags.length - 4} more`}
+          color={Color.SecondaryText}
+        />
+      ) : null}
+    </List.Item.Detail.Metadata.TagList>
+  );
+}
+
 export function MeetupDetailMetadata({ meetup }: { meetup: Meetup }) {
   const audience = getMeetupAudienceLabel(meetup);
 
@@ -138,6 +181,7 @@ export function MeetupDetailMetadata({ meetup }: { meetup: Meetup }) {
       <Detail.Metadata.Separator />
       {renderSpeakerTagsForDetail(meetup)}
       {renderSponsorTagsForDetail(meetup)}
+      {renderTagTagsForDetail(meetup)}
       {meetup.links.meetup ? (
         <Detail.Metadata.Link
           title="Meetup Page"
@@ -153,6 +197,20 @@ export function MeetupDetailMetadata({ meetup }: { meetup: Meetup }) {
         />
       ) : meetup.acceptingRsvp ? (
         <Detail.Metadata.Label title="RSVP" text="Open on website" />
+      ) : null}
+      {meetup.links.recording ? (
+        <Detail.Metadata.Link
+          title="Recording"
+          target={meetup.links.recording}
+          text="Open"
+        />
+      ) : null}
+      {meetup.links.slides ? (
+        <Detail.Metadata.Link
+          title="Slides"
+          target={meetup.links.slides}
+          text="Open"
+        />
       ) : null}
       {meetup.links.map ? (
         <Detail.Metadata.Link
@@ -198,9 +256,24 @@ export function MeetupListMetadata({ meetup }: { meetup: Meetup }) {
       ) : meetup.acceptingRsvp ? (
         <List.Item.Detail.Metadata.Label title="RSVP" text="Open on website" />
       ) : null}
+      {meetup.links.recording ? (
+        <List.Item.Detail.Metadata.Link
+          title="Recording"
+          target={meetup.links.recording}
+          text="Open"
+        />
+      ) : null}
+      {meetup.links.slides ? (
+        <List.Item.Detail.Metadata.Link
+          title="Slides"
+          target={meetup.links.slides}
+          text="Open"
+        />
+      ) : null}
       <List.Item.Detail.Metadata.Separator />
       {renderSpeakerTagsForList(meetup)}
       {renderSponsorTagsForList(meetup)}
+      {renderTagTagsForList(meetup)}
     </List.Item.Detail.Metadata>
   );
 }

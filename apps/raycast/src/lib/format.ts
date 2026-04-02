@@ -1,6 +1,6 @@
 import { Color, Icon } from "@raycast/api";
 
-import type { Meetup } from "./types";
+import type { Meetup } from "./core";
 
 function joinParts(parts: Array<string | undefined | null>): string {
   return parts
@@ -114,13 +114,21 @@ export function getMeetupSpeakerNames(meetup: Meetup): string[] {
   return meetup.speakers.map((speaker) => speaker.name);
 }
 
+export function getMeetupTagNames(meetup: Meetup): string[] {
+  return meetup.tags?.filter(Boolean) ?? [];
+}
+
 export function meetupKeywords(meetup: Meetup): string[] {
   return [
     meetup.slug,
+    meetup.title,
     meetup.status,
     meetup.location.name,
+    meetup.location.address,
     meetup.location.city,
+    ...getMeetupTagNames(meetup),
     ...meetup.speakers.map((speaker) => speaker.name),
+    ...meetup.sponsors.map((sponsor) => sponsor.name),
     ...meetup.sessions.map((session) => session.title),
   ].filter(Boolean) as string[];
 }
@@ -177,9 +185,18 @@ export function renderMeetupMarkdown(meetup: Meetup): string {
     }
   }
 
+  if (getMeetupTagNames(meetup).length) {
+    lines.push("", "## Tags", "");
+    for (const tag of getMeetupTagNames(meetup)) {
+      lines.push(`- ${tag}`);
+    }
+  }
+
   if (
     meetup.links.meetup ||
     meetup.links.rsvp ||
+    meetup.links.recording ||
+    meetup.links.slides ||
     meetup.links.map ||
     meetup.links.parking
   ) {
@@ -189,6 +206,12 @@ export function renderMeetupMarkdown(meetup: Meetup): string {
     }
     if (meetup.links.rsvp) {
       lines.push(`- [RSVP](${meetup.links.rsvp})`);
+    }
+    if (meetup.links.recording) {
+      lines.push(`- [Recording](${meetup.links.recording})`);
+    }
+    if (meetup.links.slides) {
+      lines.push(`- [Slides](${meetup.links.slides})`);
     }
     if (meetup.links.map) {
       lines.push(`- [Map](${meetup.links.map})`);

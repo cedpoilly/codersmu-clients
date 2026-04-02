@@ -1,79 +1,99 @@
-import { getPreferenceValues } from "@raycast/api";
-import { usePromise } from "@raycast/utils";
-import { execFile } from "node:child_process";
-import { fileURLToPath } from "node:url";
-import { dirname, resolve } from "node:path";
-import { promisify } from "node:util";
+import { environment } from "@raycast/api";
+import { showFailureToast, usePromise } from "@raycast/utils";
+import { join } from "node:path";
+import { useState } from "react";
 
-import type { Meetup } from "./types";
+import {
+  getMeetup,
+  getMeetupsForList,
+  resolveDefaultMeetupProvider,
+} from "./core";
+import type { Meetup } from "./core";
+import { MeetupNotFoundError, isMeetupNotFoundError } from "./errors";
 
-interface Preferences {
-  cliPath?: string;
+const extensionCacheFile = join(environment.supportPath, "meetups.json");
+
+function configureExtensionCache() {
+  process.env.CODERSMU_CACHE_FILE = extensionCacheFile;
 }
 
-const execFileAsync = promisify(execFile);
-const currentDir = dirname(fileURLToPath(import.meta.url));
-const defaultCliScriptPath = resolve(currentDir, "../../../../dist/cli.mjs");
+async function loadMeetup(
+  selector: string,
+  forceRefresh = false,
+): Promise<Meetup> {
+  configureExtensionCache();
 
-function getCliScriptPath(): string {
-  const preferences = getPreferenceValues<Preferences>();
-  const configuredPath = preferences.cliPath?.trim();
-  if (configuredPath) {
-    return configuredPath;
+  const provider = await resolveDefaultMeetupProvider({
+    forceRefresh,
+    allowStaleOnError: !forceRefresh,
+  });
+  const meetup = await getMeetup(provider, selector);
+
+  if (!meetup) {
+    throw new MeetupNotFoundError(selector);
   }
 
-  return defaultCliScriptPath;
+  return meetup;
 }
 
-async function runCliJson<T>(args: string[]): Promise<T> {
-  try {
-    const { stdout } = await execFileAsync(
-      process.execPath,
-      [getCliScriptPath(), ...args],
-      {
-        timeout: 10000,
-      },
-    );
+async function loadMeetups(forceRefresh = false): Promise<Meetup[]> {
+  configureExtensionCache();
 
-    return JSON.parse(stdout) as T;
-  } catch (error) {
-    if (typeof error === "object" && error && "stderr" in error) {
-      const stderr = String(error.stderr || "").trim();
-      if (stderr) {
-        throw new Error(stderr);
-      }
-    }
-
-    if (error instanceof Error) {
-      throw error;
-    }
-
-    throw new Error(String(error));
-  }
+  const provider = await resolveDefaultMeetupProvider({
+    forceRefresh,
+    allowStaleOnError: !forceRefresh,
+  });
+  return getMeetupsForList(provider, "all");
 }
 
 export function useMeetup(selector: string) {
-  return usePromise(
-    (target: string) => runCliJson<Meetup>(["view", target, "--json"]),
-    [selector],
+  const [refreshNonce, setRefreshNonce] = useState(0);
+  const promise = usePromise(
+    (target: string, nonce: number) => loadMeetup(target, nonce > 0),
+    [selector, refreshNonce],
     {
-      failureToastOptions: {
-        title: "Could not load meetup",
-        message: "Check the Coders.mu CLI path in the extension preferences.",
+      onError: async (error) => {
+        if (isMeetupNotFoundError(error)) {
+          return;
+        }
+
+        await showFailureToast(error, {
+          title: "Could not load meetup",
+          message:
+            "Coders.mu is unavailable right now and there is no cached meetup data yet.",
+        });
       },
     },
   );
+
+  return {
+    ...promise,
+    revalidate: () => {
+      setRefreshNonce((nonce) => nonce + 1);
+    },
+  };
 }
 
 export function useMeetups() {
-  return usePromise(
-    () => runCliJson<Meetup[]>(["list", "--state", "all", "--json"]),
-    [],
+  const [refreshNonce, setRefreshNonce] = useState(0);
+  const promise = usePromise(
+    (nonce: number) => loadMeetups(nonce > 0),
+    [refreshNonce],
     {
-      failureToastOptions: {
-        title: "Could not load meetups",
-        message: "Check the Coders.mu CLI path in the extension preferences.",
+      onError: async (error) => {
+        await showFailureToast(error, {
+          title: "Could not load meetups",
+          message:
+            "Coders.mu is unavailable right now and there is no cached meetup data yet.",
+        });
       },
     },
   );
+
+  return {
+    ...promise,
+    revalidate: () => {
+      setRefreshNonce((nonce) => nonce + 1);
+    },
+  };
 }
