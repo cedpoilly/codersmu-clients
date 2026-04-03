@@ -1,0 +1,47 @@
+name: CodersmuMenuBar
+options:
+  bundleIdPrefix: mu.coders
+  deploymentTarget:
+    macOS: "14.0"
+configs:
+  Debug: debug
+  Release: release
+settings:
+  base:
+    SWIFT_VERSION: 6.0
+    CURRENT_PROJECT_VERSION: 1
+    MARKETING_VERSION: 0.1.0
+targets:
+  CodersmuMenuBar:
+    type: application
+    platform: macOS
+    sources:
+      - path: CodersmuMenuBar
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: mu.coders.CodersmuMenuBar
+        PRODUCT_NAME: CodersmuMenuBar
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_CFBundleDisplayName: Coders.mu
+        INFOPLIST_KEY_LSUIElement: YES
+        INFOPLIST_KEY_NSPrincipalClass: NSApplication
+        CODE_SIGN_STYLE: Automatic
+  CodersmuMenuBarTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - path: CodersmuMenuBarTests
+    dependencies:
+      - target: CodersmuMenuBar
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+schemes:
+  CodersmuMenuBar:
+    build:
+      targets:
+        CodersmuMenuBar: all
+        CodersmuMenuBarTests: [test]
+    test:
+      targets:
+        - name: CodersmuMenuBarTests

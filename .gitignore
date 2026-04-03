@@ -5,3 +5,7 @@ apps/*/node_modules
 apps/*/dist
 apps/*/raycast-env.d.ts
 *.tsbuildinfo
+DerivedData
+*.xcuserstate
+*.xcodeproj/xcuserdata
+*.xcworkspace/xcuserdata
