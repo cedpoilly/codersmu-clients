@@ -1,0 +1,623 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		00E587AB08FD453E18E64F22 /* LaunchAtLoginManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29FFDA1F3B95E3AEBE03F8ED /* LaunchAtLoginManager.swift */; };
+		012F6E4CC170D37F49BDEE44 /* AppPreferencesStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FDBF92B7E9542E652F3F663 /* AppPreferencesStore.swift */; };
+		01996E90ACEF178EFAB0F67F /* MeetupChangeEvent.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD5182E3BC2DC291C72944BA /* MeetupChangeEvent.swift */; };
+		06840D446422FE25B4C951AA /* RefreshCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = F9B5666665F3B4CBC4836852 /* RefreshCoordinator.swift */; };
+		071ABB054D36EBBB4EEB451A /* NextMeetupSummaryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B1C4DFFF33B9D5E61262750 /* NextMeetupSummaryView.swift */; };
+		2A098174F70C450533E1BAD2 /* CodersmuBrandMarkView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AA6E5B6CF8E9F4B7075D103 /* CodersmuBrandMarkView.swift */; };
+		442ED5333426BD346E484AD4 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0F358F67F13CC07667091BA /* SettingsView.swift */; };
+		4EA92FD3147DD03C45E9D99D /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 66B176186EBEDA9C256164FC /* AppDelegate.swift */; };
+		4FDAC486475461F059F0C75B /* MeetupSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3DAC4245D8AA4EED41E63D84 /* MeetupSource.swift */; };
+		546EFD6A8F0E0E23902A6EEE /* AppPreferences.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29E3E367D5A7C02FDEDC54F8 /* AppPreferences.swift */; };
+		55C3D7843D5ABA841738894F /* SampleData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 97647D8F6708FB8BF70C1218 /* SampleData.swift */; };
+		6BEC277645C64691F478EAD1 /* UserNotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6BB0CD3CA862A2575290B3E6 /* UserNotificationService.swift */; };
+		771616238A845ED5450FAA93 /* MeetupSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B75B405D7128AF1E5A5A095 /* MeetupSnapshot.swift */; };
+		7CFFAD376199F235D9AE9A79 /* AppLogger.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D0787C53EA7FDC4D55BF5CB /* AppLogger.swift */; };
+		7D738A42486823AFFE3E64EF /* MenuBarStatusSectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C565A503F4E98FACA8718F6E /* MenuBarStatusSectionView.swift */; };
+		8DE196C34393C5523C31377A /* ChangeDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50BF04F5A91DE60B8F900314 /* ChangeDetector.swift */; };
+		8F2FF0F00A869CD3BC286A02 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 8F96EB15D14402A1722A50AD /* Assets.xcassets */; };
+		98D9AB8777472D150493FC27 /* AppModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E85B6310C4E5453B4CB998C /* AppModel.swift */; };
+		9F96186E365F3E3CF6779D1C /* MenuBarRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9ED2C4AB51FD55ACE24917C7 /* MenuBarRootView.swift */; };
+		A690DA935092011AC0FD7912 /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03BF6B1B61F371677119EAAE /* NotificationService.swift */; };
+		A8FDA628624CDF8C0F82DA74 /* CodersmuMenuBarApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D3591D84D7A016D4723E00D /* CodersmuMenuBarApp.swift */; };
+		CD492B5FA1CB47AAB2C68FF8 /* ApplicationSupportSnapshotStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = F06D8F45F14F54D0983077E8 /* ApplicationSupportSnapshotStore.swift */; };
+		D3409892FC47B95F1CF19322 /* MenuBarLabelView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44EDA9BC6AEFD9200096C8DC /* MenuBarLabelView.swift */; };
+		D4E61F0FB2822EBAA951FCF1 /* ChangeDetectorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47F395CB7B3798DBA9B704DD /* ChangeDetectorTests.swift */; };
+		DB4A4DBB4FE3E5776F4B4B28 /* SampleMeetupSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC62726386486D8238BEFA70 /* SampleMeetupSource.swift */; };
+		DDF2E67F2CD5D0AE3AB0BCC9 /* SnapshotStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9452818531A6E208BE501A7 /* SnapshotStore.swift */; };
+		ED60D61699B0CAD8A5FF9AA5 /* CliMeetupSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = 45FAD3D8BBFB2186113CD499 /* CliMeetupSource.swift */; };
+		F0C531966CFB5149B165594A /* RefreshScheduler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4BF17D92EAA07F46019DD008 /* RefreshScheduler.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		24F8F344F67AAC8BD2E73368 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 38816C7688E7AB2CC10CD3BD /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 1F8122783F178328586E26A1;
+			remoteInfo = CodersmuMenuBar;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		03BF6B1B61F371677119EAAE /* NotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationService.swift; sourceTree = "<group>"; };
+		10A9DDA6B45281B260215CF3 /* CodersmuMenuBar.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CodersmuMenuBar.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		1AA6E5B6CF8E9F4B7075D103 /* CodersmuBrandMarkView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodersmuBrandMarkView.swift; sourceTree = "<group>"; };
+		29E3E367D5A7C02FDEDC54F8 /* AppPreferences.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppPreferences.swift; sourceTree = "<group>"; };
+		29FFDA1F3B95E3AEBE03F8ED /* LaunchAtLoginManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaunchAtLoginManager.swift; sourceTree = "<group>"; };
+		2B75B405D7128AF1E5A5A095 /* MeetupSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeetupSnapshot.swift; sourceTree = "<group>"; };
+		3DAC4245D8AA4EED41E63D84 /* MeetupSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeetupSource.swift; sourceTree = "<group>"; };
+		42C2B6202FCA7419ED5ECD0C /* CodersmuMenuBarTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CodersmuMenuBarTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		44EDA9BC6AEFD9200096C8DC /* MenuBarLabelView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarLabelView.swift; sourceTree = "<group>"; };
+		45FAD3D8BBFB2186113CD499 /* CliMeetupSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CliMeetupSource.swift; sourceTree = "<group>"; };
+		47F395CB7B3798DBA9B704DD /* ChangeDetectorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChangeDetectorTests.swift; sourceTree = "<group>"; };
+		4BF17D92EAA07F46019DD008 /* RefreshScheduler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RefreshScheduler.swift; sourceTree = "<group>"; };
+		4D3591D84D7A016D4723E00D /* CodersmuMenuBarApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodersmuMenuBarApp.swift; sourceTree = "<group>"; };
+		50BF04F5A91DE60B8F900314 /* ChangeDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChangeDetector.swift; sourceTree = "<group>"; };
+		5FDBF92B7E9542E652F3F663 /* AppPreferencesStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppPreferencesStore.swift; sourceTree = "<group>"; };
+		66B176186EBEDA9C256164FC /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		6BB0CD3CA862A2575290B3E6 /* UserNotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserNotificationService.swift; sourceTree = "<group>"; };
+		7B1C4DFFF33B9D5E61262750 /* NextMeetupSummaryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NextMeetupSummaryView.swift; sourceTree = "<group>"; };
+		8D0787C53EA7FDC4D55BF5CB /* AppLogger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppLogger.swift; sourceTree = "<group>"; };
+		8E85B6310C4E5453B4CB998C /* AppModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppModel.swift; sourceTree = "<group>"; };
+		8F96EB15D14402A1722A50AD /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		97647D8F6708FB8BF70C1218 /* SampleData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SampleData.swift; sourceTree = "<group>"; };
+		9ED2C4AB51FD55ACE24917C7 /* MenuBarRootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarRootView.swift; sourceTree = "<group>"; };
+		B9452818531A6E208BE501A7 /* SnapshotStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnapshotStore.swift; sourceTree = "<group>"; };
+		BC62726386486D8238BEFA70 /* SampleMeetupSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SampleMeetupSource.swift; sourceTree = "<group>"; };
+		C565A503F4E98FACA8718F6E /* MenuBarStatusSectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarStatusSectionView.swift; sourceTree = "<group>"; };
+		CD5182E3BC2DC291C72944BA /* MeetupChangeEvent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeetupChangeEvent.swift; sourceTree = "<group>"; };
+		D0F358F67F13CC07667091BA /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		F06D8F45F14F54D0983077E8 /* ApplicationSupportSnapshotStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApplicationSupportSnapshotStore.swift; sourceTree = "<group>"; };
+		F9B5666665F3B4CBC4836852 /* RefreshCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RefreshCoordinator.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		0974DEFFB06FA2FD0EE6EBE4 /* CodersmuMenuBar */ = {
+			isa = PBXGroup;
+			children = (
+				8F96EB15D14402A1722A50AD /* Assets.xcassets */,
+				4CDCD6D045F038E1ECA63E5B /* App */,
+				4D21BA4682274D346A5BD6F9 /* Features */,
+				A35972FBB0E6C5EA21DC91D5 /* Models */,
+				BC2BC1CB2FFF5B450B4DA830 /* Services */,
+				519F4F12806DB84A3F93ECC9 /* Support */,
+			);
+			path = CodersmuMenuBar;
+			sourceTree = "<group>";
+		};
+		1D91918C6C75A3B277BD41BD /* ChangeDetection */ = {
+			isa = PBXGroup;
+			children = (
+				50BF04F5A91DE60B8F900314 /* ChangeDetector.swift */,
+			);
+			path = ChangeDetection;
+			sourceTree = "<group>";
+		};
+		258AC30DF7FD7F276C8A6640 /* CodersmuMenuBarTests */ = {
+			isa = PBXGroup;
+			children = (
+				47F395CB7B3798DBA9B704DD /* ChangeDetectorTests.swift */,
+			);
+			path = CodersmuMenuBarTests;
+			sourceTree = "<group>";
+		};
+		297A1F351EF92A848B4232E1 /* Refresh */ = {
+			isa = PBXGroup;
+			children = (
+				F9B5666665F3B4CBC4836852 /* RefreshCoordinator.swift */,
+				4BF17D92EAA07F46019DD008 /* RefreshScheduler.swift */,
+			);
+			path = Refresh;
+			sourceTree = "<group>";
+		};
+		3344821BD05A85721B67EF5E /* Persistence */ = {
+			isa = PBXGroup;
+			children = (
+				F06D8F45F14F54D0983077E8 /* ApplicationSupportSnapshotStore.swift */,
+				5FDBF92B7E9542E652F3F663 /* AppPreferencesStore.swift */,
+				B9452818531A6E208BE501A7 /* SnapshotStore.swift */,
+			);
+			path = Persistence;
+			sourceTree = "<group>";
+		};
+		367D03A453FC5CC3023EC681 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				10A9DDA6B45281B260215CF3 /* CodersmuMenuBar.app */,
+				42C2B6202FCA7419ED5ECD0C /* CodersmuMenuBarTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		4CDCD6D045F038E1ECA63E5B /* App */ = {
+			isa = PBXGroup;
+			children = (
+				66B176186EBEDA9C256164FC /* AppDelegate.swift */,
+				8E85B6310C4E5453B4CB998C /* AppModel.swift */,
+				4D3591D84D7A016D4723E00D /* CodersmuMenuBarApp.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		4D21BA4682274D346A5BD6F9 /* Features */ = {
+			isa = PBXGroup;
+			children = (
+				B3A41FDABFDF140CEF95E665 /* MenuBar */,
+				F5823B55FF9CA05A7181C7FF /* NextMeetup */,
+				D629556024E3B029AEC128C0 /* Settings */,
+			);
+			path = Features;
+			sourceTree = "<group>";
+		};
+		519F4F12806DB84A3F93ECC9 /* Support */ = {
+			isa = PBXGroup;
+			children = (
+				1AA6E5B6CF8E9F4B7075D103 /* CodersmuBrandMarkView.swift */,
+				97647D8F6708FB8BF70C1218 /* SampleData.swift */,
+			);
+			path = Support;
+			sourceTree = "<group>";
+		};
+		A35972FBB0E6C5EA21DC91D5 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				29E3E367D5A7C02FDEDC54F8 /* AppPreferences.swift */,
+				CD5182E3BC2DC291C72944BA /* MeetupChangeEvent.swift */,
+				2B75B405D7128AF1E5A5A095 /* MeetupSnapshot.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		A35FF980A073DB957EB981BF /* Source */ = {
+			isa = PBXGroup;
+			children = (
+				45FAD3D8BBFB2186113CD499 /* CliMeetupSource.swift */,
+				3DAC4245D8AA4EED41E63D84 /* MeetupSource.swift */,
+				BC62726386486D8238BEFA70 /* SampleMeetupSource.swift */,
+			);
+			path = Source;
+			sourceTree = "<group>";
+		};
+		A5455106C763125C1AC81908 = {
+			isa = PBXGroup;
+			children = (
+				0974DEFFB06FA2FD0EE6EBE4 /* CodersmuMenuBar */,
+				258AC30DF7FD7F276C8A6640 /* CodersmuMenuBarTests */,
+				367D03A453FC5CC3023EC681 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		B3A41FDABFDF140CEF95E665 /* MenuBar */ = {
+			isa = PBXGroup;
+			children = (
+				44EDA9BC6AEFD9200096C8DC /* MenuBarLabelView.swift */,
+				9ED2C4AB51FD55ACE24917C7 /* MenuBarRootView.swift */,
+				C565A503F4E98FACA8718F6E /* MenuBarStatusSectionView.swift */,
+			);
+			path = MenuBar;
+			sourceTree = "<group>";
+		};
+		BC2BC1CB2FFF5B450B4DA830 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				1D91918C6C75A3B277BD41BD /* ChangeDetection */,
+				D754C52FA49F315D7CA04AF5 /* Logging */,
+				FC97AEF1C1214F1ADDCC0F55 /* Notifications */,
+				3344821BD05A85721B67EF5E /* Persistence */,
+				297A1F351EF92A848B4232E1 /* Refresh */,
+				A35FF980A073DB957EB981BF /* Source */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		D629556024E3B029AEC128C0 /* Settings */ = {
+			isa = PBXGroup;
+			children = (
+				D0F358F67F13CC07667091BA /* SettingsView.swift */,
+			);
+			path = Settings;
+			sourceTree = "<group>";
+		};
+		D754C52FA49F315D7CA04AF5 /* Logging */ = {
+			isa = PBXGroup;
+			children = (
+				8D0787C53EA7FDC4D55BF5CB /* AppLogger.swift */,
+			);
+			path = Logging;
+			sourceTree = "<group>";
+		};
+		F5823B55FF9CA05A7181C7FF /* NextMeetup */ = {
+			isa = PBXGroup;
+			children = (
+				7B1C4DFFF33B9D5E61262750 /* NextMeetupSummaryView.swift */,
+			);
+			path = NextMeetup;
+			sourceTree = "<group>";
+		};
+		FC97AEF1C1214F1ADDCC0F55 /* Notifications */ = {
+			isa = PBXGroup;
+			children = (
+				29FFDA1F3B95E3AEBE03F8ED /* LaunchAtLoginManager.swift */,
+				03BF6B1B61F371677119EAAE /* NotificationService.swift */,
+				6BB0CD3CA862A2575290B3E6 /* UserNotificationService.swift */,
+			);
+			path = Notifications;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		1F8122783F178328586E26A1 /* CodersmuMenuBar */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A69EDFF3FD903BF1FEF2865E /* Build configuration list for PBXNativeTarget "CodersmuMenuBar" */;
+			buildPhases = (
+				8FEF708ACE6121AF0C9446E0 /* Sources */,
+				28E05B9BDAE6116E90C4122F /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = CodersmuMenuBar;
+			packageProductDependencies = (
+			);
+			productName = CodersmuMenuBar;
+			productReference = 10A9DDA6B45281B260215CF3 /* CodersmuMenuBar.app */;
+			productType = "com.apple.product-type.application";
+		};
+		7C6682367F4909FD06A73FB4 /* CodersmuMenuBarTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 0EFCCFB242ED051EF95EC72E /* Build configuration list for PBXNativeTarget "CodersmuMenuBarTests" */;
+			buildPhases = (
+				002BB999C20EEDC5AD987A79 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				6E3A88F3DDC26C0D7FB9647C /* PBXTargetDependency */,
+			);
+			name = CodersmuMenuBarTests;
+			packageProductDependencies = (
+			);
+			productName = CodersmuMenuBarTests;
+			productReference = 42C2B6202FCA7419ED5ECD0C /* CodersmuMenuBarTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		38816C7688E7AB2CC10CD3BD /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+					1F8122783F178328586E26A1 = {
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = AA1B47D4BF8276669828071C /* Build configuration list for PBXProject "CodersmuMenuBar" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = A5455106C763125C1AC81908;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 367D03A453FC5CC3023EC681 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				1F8122783F178328586E26A1 /* CodersmuMenuBar */,
+				7C6682367F4909FD06A73FB4 /* CodersmuMenuBarTests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		28E05B9BDAE6116E90C4122F /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				8F2FF0F00A869CD3BC286A02 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		002BB999C20EEDC5AD987A79 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				D4E61F0FB2822EBAA951FCF1 /* ChangeDetectorTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		8FEF708ACE6121AF0C9446E0 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				4EA92FD3147DD03C45E9D99D /* AppDelegate.swift in Sources */,
+				7CFFAD376199F235D9AE9A79 /* AppLogger.swift in Sources */,
+				98D9AB8777472D150493FC27 /* AppModel.swift in Sources */,
+				546EFD6A8F0E0E23902A6EEE /* AppPreferences.swift in Sources */,
+				012F6E4CC170D37F49BDEE44 /* AppPreferencesStore.swift in Sources */,
+				CD492B5FA1CB47AAB2C68FF8 /* ApplicationSupportSnapshotStore.swift in Sources */,
+				8DE196C34393C5523C31377A /* ChangeDetector.swift in Sources */,
+				ED60D61699B0CAD8A5FF9AA5 /* CliMeetupSource.swift in Sources */,
+				2A098174F70C450533E1BAD2 /* CodersmuBrandMarkView.swift in Sources */,
+				A8FDA628624CDF8C0F82DA74 /* CodersmuMenuBarApp.swift in Sources */,
+				00E587AB08FD453E18E64F22 /* LaunchAtLoginManager.swift in Sources */,
+				01996E90ACEF178EFAB0F67F /* MeetupChangeEvent.swift in Sources */,
+				771616238A845ED5450FAA93 /* MeetupSnapshot.swift in Sources */,
+				4FDAC486475461F059F0C75B /* MeetupSource.swift in Sources */,
+				D3409892FC47B95F1CF19322 /* MenuBarLabelView.swift in Sources */,
+				9F96186E365F3E3CF6779D1C /* MenuBarRootView.swift in Sources */,
+				7D738A42486823AFFE3E64EF /* MenuBarStatusSectionView.swift in Sources */,
+				071ABB054D36EBBB4EEB451A /* NextMeetupSummaryView.swift in Sources */,
+				A690DA935092011AC0FD7912 /* NotificationService.swift in Sources */,
+				06840D446422FE25B4C951AA /* RefreshCoordinator.swift in Sources */,
+				F0C531966CFB5149B165594A /* RefreshScheduler.swift in Sources */,
+				55C3D7843D5ABA841738894F /* SampleData.swift in Sources */,
+				DB4A4DBB4FE3E5776F4B4B28 /* SampleMeetupSource.swift in Sources */,
+				442ED5333426BD346E484AD4 /* SettingsView.swift in Sources */,
+				DDF2E67F2CD5D0AE3AB0BCC9 /* SnapshotStore.swift in Sources */,
+				6BEC277645C64691F478EAD1 /* UserNotificationService.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		6E3A88F3DDC26C0D7FB9647C /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 1F8122783F178328586E26A1 /* CodersmuMenuBar */;
+			targetProxy = 24F8F344F67AAC8BD2E73368 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		61784687F43213A9878E2D0A /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				COMBINE_HIDPI_IMAGES = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@loader_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = mu.coders.CodersmuMenuBarTests;
+				SDKROOT = macosx;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/CodersmuMenuBar.app/Contents/MacOS/CodersmuMenuBar";
+			};
+			name = Release;
+		};
+		7EA81B6D3B894CC81E49A5E3 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 0.1.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 6.0;
+			};
+			name = Debug;
+		};
+		A4306A83E82E306DA509B7F6 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 0.1.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 6.0;
+			};
+			name = Release;
+		};
+		A50AFD26F39B5236D3B169E5 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				COMBINE_HIDPI_IMAGES = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@loader_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = mu.coders.CodersmuMenuBarTests;
+				SDKROOT = macosx;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/CodersmuMenuBar.app/Contents/MacOS/CodersmuMenuBar";
+			};
+			name = Debug;
+		};
+		EDD891825E6AA426DAEE3CFD /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = Coders.mu;
+				INFOPLIST_KEY_LSUIElement = YES;
+				INFOPLIST_KEY_NSPrincipalClass = NSApplication;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = mu.coders.CodersmuMenuBar;
+				PRODUCT_NAME = CodersmuMenuBar;
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+		F9C89D26FADF2C61FFC6A897 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = Coders.mu;
+				INFOPLIST_KEY_LSUIElement = YES;
+				INFOPLIST_KEY_NSPrincipalClass = NSApplication;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = mu.coders.CodersmuMenuBar;
+				PRODUCT_NAME = CodersmuMenuBar;
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		0EFCCFB242ED051EF95EC72E /* Build configuration list for PBXNativeTarget "CodersmuMenuBarTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A50AFD26F39B5236D3B169E5 /* Debug */,
+				61784687F43213A9878E2D0A /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		A69EDFF3FD903BF1FEF2865E /* Build configuration list for PBXNativeTarget "CodersmuMenuBar" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				EDD891825E6AA426DAEE3CFD /* Debug */,
+				F9C89D26FADF2C61FFC6A897 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		AA1B47D4BF8276669828071C /* Build configuration list for PBXProject "CodersmuMenuBar" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				7EA81B6D3B894CC81E49A5E3 /* Debug */,
+				A4306A83E82E306DA509B7F6 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 38816C7688E7AB2CC10CD3BD /* Project object */;
+}
