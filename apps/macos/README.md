@@ -10,13 +10,34 @@ Current scope:
 - settings surface for launch-at-login, quiet hours, and snoozing
 - generated Xcode project via `xcodegen`
 
-## Generate the project
+## Requirements
+
+- full Xcode installed at `/Applications/Xcode.app`
+- `xcodegen` available on `PATH`
+
+## Start the dev app
 
 ```bash
-cd apps/macos
-xcodegen generate
+pnpm macos:dev
 ```
 
-## Current limitation
+This command:
 
-This repo currently has Command Line Tools selected instead of full Xcode, so project generation works locally but `xcodebuild` does not until Xcode is installed and selected.
+- regenerates the Xcode project from [project.yml](/Users/cedricpoilly/.codex/worktrees/7712/codersmu-clients/apps/macos/project.yml)
+- builds the Debug app into `apps/macos/build-derived`
+- kills any previously running `CodersmuMenuBar` process
+- opens a single fresh instance from that visible build path
+
+Use this path on purpose. Notification Center has been more reliable about showing the correct app icon when the debug app is launched from `apps/macos/build-derived` rather than a hidden artifact folder.
+
+If you need a clean rebuild first:
+
+```bash
+pnpm macos:dev:clean
+```
+
+## Debug build behavior
+
+- Debug uses bundle id `mu.coders.CodersmuMenuBar.Debug`
+- Release keeps `mu.coders.CodersmuMenuBar`
+- old notifications in Notification Center do not repaint when the icon changes; only new notifications show the new icon

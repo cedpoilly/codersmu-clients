@@ -6,6 +6,7 @@ apps/*/dist
 apps/*/raycast-env.d.ts
 *.tsbuildinfo
 DerivedData
+apps/macos/build-derived
 *.xcuserstate
 *.xcodeproj/xcuserdata
 *.xcworkspace/xcuserdata

@@ -21,6 +21,8 @@
     "build:core": "pnpm --filter @codersmu/core build",
     "build:all": "pnpm build:core && pnpm build",
     "dev": "tsdown --watch",
+    "macos:dev": "zsh apps/macos/scripts/dev.sh",
+    "macos:dev:clean": "zsh apps/macos/scripts/dev.sh --clean",
     "prepare": "npm run build",
     "test": "pnpm --filter @codersmu/core test",
     "typecheck": "tsc --noEmit",

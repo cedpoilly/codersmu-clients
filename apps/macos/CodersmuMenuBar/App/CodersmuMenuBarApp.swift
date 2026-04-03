@@ -6,15 +6,14 @@ struct CodersmuMenuBarApp: App {
   @State private var appModel: AppModel
 
   init() {
-    let source = CliMeetupSource()
     let snapshotStore = ApplicationSupportSnapshotStore()
     let preferencesStore = AppPreferencesStore()
-    let notificationService = UserNotificationService()
+    let debugHarness = DebugHarness(snapshotStore: snapshotStore)
     let coordinator = RefreshCoordinator(
-      source: source,
+      source: debugHarness,
       snapshotStore: snapshotStore,
       changeDetector: ChangeDetector(),
-      notificationService: notificationService
+      notificationService: debugHarness
     )
 
     let launchAtLoginManager = LaunchAtLoginManager()
@@ -24,7 +23,8 @@ struct CodersmuMenuBarApp: App {
       coordinator: coordinator,
       scheduler: scheduler,
       preferencesStore: preferencesStore,
-      launchAtLoginManager: launchAtLoginManager
+      launchAtLoginManager: launchAtLoginManager,
+      debugHarness: debugHarness
     )
 
     scheduler.onTick = { [weak model] in
@@ -55,7 +55,7 @@ struct CodersmuMenuBarApp: App {
 
     Settings {
       SettingsView(appModel: appModel)
-        .frame(width: 420, height: 320)
+        .frame(width: 520, height: 560)
     }
   }
 }

@@ -36,6 +36,7 @@ final class AppModel {
   var refreshState: RefreshState = .idle
   var preferences: AppPreferences
   var launchAtLoginErrorMessage: String?
+  var debugHarness: DebugHarness
 
   @ObservationIgnored private let coordinator: RefreshCoordinator
   @ObservationIgnored private let scheduler: RefreshScheduler
@@ -47,12 +48,14 @@ final class AppModel {
     coordinator: RefreshCoordinator,
     scheduler: RefreshScheduler,
     preferencesStore: AppPreferencesStore,
-    launchAtLoginManager: LaunchAtLoginManager
+    launchAtLoginManager: LaunchAtLoginManager,
+    debugHarness: DebugHarness
   ) {
     self.coordinator = coordinator
     self.scheduler = scheduler
     self.preferencesStore = preferencesStore
     self.launchAtLoginManager = launchAtLoginManager
+    self.debugHarness = debugHarness
 
     var loadedPreferences = preferencesStore.load()
     loadedPreferences.launchAtLoginEnabled = launchAtLoginManager.isEnabled()
@@ -159,6 +162,53 @@ final class AppModel {
   func clearSnooze() {
     preferences.snoozedUntil = nil
     persistPreferences()
+  }
+
+  func selectDebugSourceMode(_ mode: DebugSourceMode) async {
+    debugHarness.sourceMode = mode
+
+    if mode == .fixture {
+      debugHarness.resetScenarioSession()
+      snapshot = nil
+      lastChange = nil
+      lastRefreshAt = nil
+    }
+
+    await refresh()
+  }
+
+  func selectDebugScenario(_ scenario: DebugFixtureScenario) async {
+    debugHarness.selectScenario(scenario)
+    debugHarness.resetScenarioSession()
+    snapshot = nil
+    lastChange = nil
+    lastRefreshAt = nil
+    await refresh()
+  }
+
+  func advanceDebugScenario() async {
+    debugHarness.advanceScenario()
+    await refresh()
+  }
+
+  func replayDebugScenario() async {
+    debugHarness.resetScenarioSession()
+    snapshot = nil
+    lastChange = nil
+    lastRefreshAt = nil
+    await refresh()
+  }
+
+  func clearDebugNotificationLog() {
+    debugHarness.clearNotificationLog()
+  }
+
+  func clearDebugPersistedState() async {
+    debugHarness.clearPersistedState()
+    snapshot = nil
+    lastChange = nil
+    lastRefreshAt = nil
+    await refresh()
   }
 
   private func persistPreferences() {

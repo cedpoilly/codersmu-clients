@@ -6,6 +6,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
   static var onDidFinishLaunching: (@MainActor () -> Void)?
 
   func applicationDidFinishLaunching(_ notification: Notification) {
+    configureApplicationIcon()
     UNUserNotificationCenter.current().delegate = self
     Task { @MainActor in
       AppDelegate.onDidFinishLaunching?()
@@ -23,12 +24,33 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
     _ center: UNUserNotificationCenter,
     didReceive response: UNNotificationResponse
   ) async {
-    guard let rawURL = response.notification.request.content.userInfo["meetupURL"] as? String,
+    let userInfo = response.notification.request.content.userInfo
+
+    let targetKey: String
+    switch response.actionIdentifier {
+    case UserNotificationService.openRSVPActionIdentifier:
+      targetKey = "rsvpURL"
+    default:
+      targetKey = "meetupURL"
+    }
+
+    guard let rawURL = userInfo[targetKey] as? String ?? userInfo["meetupURL"] as? String,
           let url = URL(string: rawURL)
     else {
       return
     }
 
     NSWorkspace.shared.open(url)
+  }
+
+  @MainActor
+  private func configureApplicationIcon() {
+    guard let iconURL = Bundle.main.url(forResource: "AppIcon", withExtension: "icns"),
+          let icon = NSImage(contentsOf: iconURL)
+    else {
+      return
+    }
+
+    NSApplication.shared.applicationIconImage = icon
   }
 }
