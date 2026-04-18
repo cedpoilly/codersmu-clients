@@ -358,14 +358,21 @@ async function handleMeetupList(options: CliOptions): Promise<void> {
 
 async function handleMeetupView(selector: string, options: CliOptions): Promise<void> {
   const meetup = await fetchMeetupBySelector(selector, getDefaultMeetupQueryOptions(options))
+  const isNextSelector = selector === 'next' || selector === 'current'
+
   if (!meetup) {
+    if (options.json && isNextSelector) {
+      renderJson(createNextMeetupResponse(undefined))
+      return
+    }
+
     console.error(getMeetupNotFoundMessage(selector))
     process.exitCode = 1
     return
   }
 
   if (options.json) {
-    if (selector === 'next' || selector === 'current') {
+    if (isNextSelector) {
       renderJson(createNextMeetupResponse(meetup))
       return
     }
