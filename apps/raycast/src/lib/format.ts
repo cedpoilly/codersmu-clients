@@ -73,13 +73,7 @@ export function meetupHasCalendarSchedule(meetup: Meetup): boolean {
 
 export function formatMeetupLocation(meetup: Meetup): string {
   const location = getMeetupLocationParts(meetup);
-  return (
-    joinParts([
-      location.name,
-      location.address,
-      location.city,
-    ]) || "TBA"
-  );
+  return joinParts([location.name, location.address, location.city]) || "TBA";
 }
 
 export function getMeetupStatusLabel(meetup: Meetup): string {

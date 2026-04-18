@@ -19,13 +19,15 @@
   "scripts": {
     "build": "tsdown",
     "build:core": "pnpm --filter @codersmu/core build",
-    "build:all": "pnpm build:core && pnpm build",
+    "build:api": "pnpm --filter @codersmu/api build",
+    "build:all": "pnpm build:core && pnpm build:api && pnpm build",
     "dev": "tsdown --watch",
     "prepare": "npm run build",
     "test": "pnpm --filter @codersmu/core test",
     "typecheck": "tsc --noEmit",
     "typecheck:core": "pnpm --filter @codersmu/core typecheck",
-    "check": "pnpm typecheck && pnpm --filter @codersmu/core check && pnpm build",
+    "typecheck:api": "pnpm --filter @codersmu/api typecheck",
+    "check": "pnpm typecheck && pnpm --filter @codersmu/core check && pnpm --filter @codersmu/api check && pnpm build",
     "release:check": "pnpm check && npm pack --dry-run"
   },
   "keywords": [

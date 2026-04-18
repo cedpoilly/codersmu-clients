@@ -38,10 +38,7 @@ export function MeetupActions({
       ) : null}
       <ActionPanel.Section title="Open">
         {links.meetup ? (
-          <Action.OpenInBrowser
-            title="Open Meetup Page"
-            url={links.meetup}
-          />
+          <Action.OpenInBrowser title="Open Meetup Page" url={links.meetup} />
         ) : null}
         {links.rsvp ? (
           <Action.OpenInBrowser title="Open RSVP" url={links.rsvp} />
@@ -68,7 +65,10 @@ export function MeetupActions({
         ) : null}
       </ActionPanel.Section>
       <ActionPanel.Section title="Copy">
-        <Action.CopyToClipboard title="Copy Slug" content={getMeetupSlug(meetup)} />
+        <Action.CopyToClipboard
+          title="Copy Slug"
+          content={getMeetupSlug(meetup)}
+        />
         {links.meetup ? (
           <Action.CopyToClipboard
             title="Copy Meetup URL"
@@ -76,10 +76,7 @@ export function MeetupActions({
           />
         ) : null}
         {links.rsvp ? (
-          <Action.CopyToClipboard
-            title="Copy RSVP URL"
-            content={links.rsvp}
-          />
+          <Action.CopyToClipboard title="Copy RSVP URL" content={links.rsvp} />
         ) : null}
         {calendar ? (
           <Action.CopyToClipboard

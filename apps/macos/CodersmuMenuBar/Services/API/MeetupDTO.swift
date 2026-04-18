@@ -204,6 +204,221 @@ struct MeetupListResponseDTO: Decodable {
   let meetups: [MeetupDTO]
 }
 
+struct HostedNextMeetupResponseDTO: Decodable {
+  let meetup: HostedMeetupDTO?
+}
+
+struct HostedMeetupSpeakerDTO: Decodable {
+  let id: String?
+  let name: String
+  let githubUsername: String?
+  let avatarUrl: String?
+  let featured: Int?
+}
+
+struct HostedMeetupSessionDTO: Decodable {
+  let id: String?
+  let title: String
+  let description: String?
+  let order: Int?
+  let speakers: [HostedMeetupSpeakerDTO]
+}
+
+struct HostedMeetupSponsorDTO: Decodable {
+  let id: String?
+  let name: String
+  let website: String?
+  let logoUrl: String?
+  let sponsorTypes: [String]?
+  let logoBg: String?
+  let status: String?
+}
+
+struct HostedMeetupDTO: Decodable {
+  let id: String
+  let title: String
+  let description: String?
+  let date: String?
+  let startTime: String?
+  let endTime: String?
+  let venue: String?
+  let location: String?
+  let status: String
+  let sessions: [HostedMeetupSessionDTO]
+  let sponsors: [HostedMeetupSponsorDTO]
+  let attendeeCount: Int?
+  let seatsAvailable: Int?
+  let acceptingRsvp: CodersMuBoolish?
+  let rsvpClosingDate: String?
+  let rsvpLink: String?
+  let mapUrl: String?
+  let parkingLocation: String?
+
+  func toContract() throws -> MeetupDTO {
+    guard let date else {
+      throw APIError.invalidPayload("Hosted meetup \(id) does not have a date.")
+    }
+
+    let cleanTitle = stripHTML(title) ?? title
+    let venueName = normalizeLocationValue(stripHTML(venue) ?? "TBA")
+    let venueAddress = normalizeLocationValue(stripHTML(location))
+    let meetupURL = "\(meetupDetailURLPrefix)\(id.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? id)"
+    let normalizedSessions = sessions.map { session in
+      MeetupSessionDTO(
+        title: stripHTML(session.title) ?? session.title,
+        description: stripHTML(session.description),
+        speakers: session.speakers.map { speaker in
+          MeetupSpeakerDTO(
+            name: speaker.name,
+            title: nil,
+            githubUsername: speaker.githubUsername,
+            avatarUrl: speaker.avatarUrl,
+            featured: speaker.featured.map { $0 != 0 }
+          )
+        }
+      )
+    }
+
+    return MeetupDTO(
+      id: id,
+      slug: "\(date.prefix(10))-\(slugify(cleanTitle))",
+      title: cleanTitle,
+      summary: normalizedSummary(normalizedSessions: normalizedSessions) ?? "No meetup description published yet.",
+      startsAt: startsAt?.iso8601String ?? buildUTCDate(date: date, time: normalizeTime(startTime))?.iso8601String ?? "",
+      endsAt: endsAt?.iso8601String ?? buildUTCDate(date: date, time: normalizeTime(startTime))?.addingTimeInterval(Double(defaultDurationHours * 60 * 60)).iso8601String ?? "",
+      timezone: "Indian/Mauritius",
+      status: normalizedContractStatus,
+      location: MeetupLocationDTO(
+        name: venueName ?? "TBA",
+        address: venueAddress,
+        city: nil
+      ),
+      speakers: dedupeSpeakers(from: normalizedSessions),
+      sessions: normalizedSessions,
+      sponsors: sponsors.map { sponsor in
+        MeetupSponsorDTO(
+          name: sponsor.name,
+          website: sponsor.website,
+          sponsorTypes: sponsor.sponsorTypes ?? []
+        )
+      },
+      attendeeCount: attendeeCount,
+      seatsAvailable: seatsAvailable,
+      rsvpCount: nil,
+      acceptingRsvp: acceptingRsvp?.value,
+      links: MeetupLinksDTO(
+        meetup: meetupURL,
+        recording: nil,
+        slides: nil,
+        map: mapUrl,
+        parking: parkingLocation,
+        rsvp: normalizedRsvpLink(meetupURL: meetupURL)
+      )
+    )
+  }
+
+  private var startsAt: Date? {
+    guard let date else {
+      return nil
+    }
+
+    return buildUTCDate(date: date, time: normalizeTime(startTime))
+  }
+
+  private var endsAt: Date? {
+    guard let date, let start = startsAt else {
+      return nil
+    }
+
+    guard let endTime else {
+      return start.addingTimeInterval(Double(defaultDurationHours * 60 * 60))
+    }
+
+    let startMinutes = toMinutes(normalizeTime(startTime))
+    var endMinutes = toMinutes(normalizeTime(endTime))
+
+    if endMinutes <= startMinutes {
+      endMinutes += 24 * 60
+    }
+
+    let normalizedHours = (endMinutes / 60) % 24
+    let normalizedMinutes = endMinutes % 60
+    let dayOffset = endMinutes / (24 * 60)
+    let localDate = addDays(to: date, days: dayOffset)
+
+    return buildUTCDate(
+      date: localDate,
+      time: String(format: "%02d:%02d", normalizedHours, normalizedMinutes)
+    )
+  }
+
+  private func normalizedSummary(normalizedSessions: [MeetupSessionDTO]) -> String? {
+    if let descriptionSummary = normalizedDescription {
+      return descriptionSummary
+    }
+
+    let sessionTitles = normalizedSessions
+      .map(\.title)
+      .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+      .filter { !$0.isEmpty }
+
+    guard !sessionTitles.isEmpty else {
+      return nil
+    }
+
+    return sessionTitles.joined(separator: " | ")
+  }
+
+  private var normalizedDescription: String? {
+    guard
+      let summary = stripHTML(description)?
+        .trimmingCharacters(in: .whitespacesAndNewlines),
+      !summary.isEmpty,
+      summary != "No meetup description published yet."
+    else {
+      return nil
+    }
+
+    return summary
+  }
+
+  private var normalizedContractStatus: MeetupContractStatusDTO {
+    switch status.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() {
+    case "postponed":
+      return .postponed
+    case "canceled", "cancelled":
+      return .canceled
+    default:
+      guard let startsAt, let endsAt else {
+        return .scheduled
+      }
+
+      let now = Date()
+      if now < startsAt {
+        return .scheduled
+      }
+
+      if now <= endsAt {
+        return .ongoing
+      }
+
+      return .completed
+    }
+  }
+
+  private func normalizedRsvpLink(meetupURL: String) -> String? {
+    if let rsvpLink, !rsvpLink.isEmpty {
+      return rsvpLink
+    }
+
+    if acceptingRsvp?.value == true {
+      return meetupURL
+    }
+
+    return nil
+  }
+}
+
 struct CodersMuMeetupDTO: Decodable {
   let id: String
   let title: String
