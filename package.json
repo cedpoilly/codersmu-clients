@@ -18,14 +18,16 @@
   },
   "scripts": {
     "build": "tsdown",
+    "build:contracts": "pnpm --filter @codersmu/contracts build",
     "build:core": "pnpm --filter @codersmu/core build",
-    "build:all": "pnpm build:core && pnpm build",
+    "build:all": "pnpm build:contracts && pnpm build:core && pnpm build",
     "dev": "tsdown --watch",
     "prepare": "npm run build",
     "test": "pnpm --filter @codersmu/core test",
     "typecheck": "tsc --noEmit",
+    "typecheck:contracts": "pnpm --filter @codersmu/contracts typecheck",
     "typecheck:core": "pnpm --filter @codersmu/core typecheck",
-    "check": "pnpm typecheck && pnpm --filter @codersmu/core check && pnpm build",
+    "check": "pnpm typecheck && pnpm --filter @codersmu/contracts check && pnpm --filter @codersmu/core check && pnpm build",
     "release:check": "pnpm check && npm pack --dry-run"
   },
   "keywords": [
@@ -47,6 +49,7 @@
     "access": "public"
   },
   "devDependencies": {
+    "@codersmu/contracts": "workspace:*",
     "@types/node": "^24.5.2",
     "tsdown": "^0.16.6",
     "typescript": "^5.9.2",

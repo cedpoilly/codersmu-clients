@@ -3,11 +3,7 @@ import { showFailureToast, usePromise } from "@raycast/utils";
 import { join } from "node:path";
 import { useState } from "react";
 
-import {
-  getMeetup,
-  getMeetupsForList,
-  resolveDefaultMeetupProvider,
-} from "./core";
+import { fetchMeetupBySelector, fetchMeetupList } from "./core";
 import type { Meetup } from "./core";
 import { MeetupNotFoundError, isMeetupNotFoundError } from "./errors";
 
@@ -23,11 +19,10 @@ async function loadMeetup(
 ): Promise<Meetup> {
   configureExtensionCache();
 
-  const provider = await resolveDefaultMeetupProvider({
+  const meetup = await fetchMeetupBySelector(selector, {
     forceRefresh,
     allowStaleOnError: !forceRefresh,
   });
-  const meetup = await getMeetup(provider, selector);
 
   if (!meetup) {
     throw new MeetupNotFoundError(selector);
@@ -39,11 +34,10 @@ async function loadMeetup(
 async function loadMeetups(forceRefresh = false): Promise<Meetup[]> {
   configureExtensionCache();
 
-  const provider = await resolveDefaultMeetupProvider({
+  return fetchMeetupList("all", {
     forceRefresh,
     allowStaleOnError: !forceRefresh,
   });
-  return getMeetupsForList(provider, "all");
 }
 
 export function useMeetup(selector: string) {

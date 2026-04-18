@@ -6,7 +6,7 @@ Current scope:
 
 - SwiftUI `MenuBarExtra` app shell
 - `@Observable` app model
-- CLI-backed meetup source, plus persistence, change detection, notification, and refresh services
+- HTTP-backed meetup source, plus persistence, change detection, notification, and refresh services
 - settings surface for launch-at-login, quiet hours, and snoozing
 - generated Xcode project via `xcodegen`
 

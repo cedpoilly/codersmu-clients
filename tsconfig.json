@@ -12,6 +12,12 @@
     "skipLibCheck": true,
     "noEmit": true,
     "paths": {
+      "@codersmu/contracts": [
+        "./packages/contracts/src/index.ts"
+      ],
+      "@codersmu/contracts/*": [
+        "./packages/contracts/src/*"
+      ],
       "@codersmu/core": [
         "./packages/core/src/index.ts"
       ],
@@ -25,6 +31,7 @@
   },
   "include": [
     "src/**/*.ts",
+    "packages/contracts/src/**/*.ts",
     "packages/core/src/**/*.ts",
     "tsdown.config.ts"
   ]

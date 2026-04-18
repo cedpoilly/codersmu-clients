@@ -101,4 +101,63 @@ describe('scrapeCodersMuMeetups', () => {
     expect(fetchMock).toHaveBeenCalledTimes(1)
     expect(fetchMock.mock.calls[0]?.[1]?.signal).toBeInstanceOf(AbortSignal)
   })
+
+  it('preserves postponed and canceled meetup statuses from the source payload', async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(new Response(createHtml({
+        props: {
+          meetups: [
+            {
+              id: 'postponed-meetup',
+              title: 'Postponed Meetup',
+              date: '2099-04-18',
+            },
+            {
+              id: 'canceled-meetup',
+              title: 'Canceled Meetup',
+              date: '2099-05-18',
+            },
+          ],
+        },
+      }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(createHtml({
+        props: {
+          meetup: {
+            id: 'postponed-meetup',
+            title: 'Postponed Meetup',
+            date: '2099-04-18',
+            startTime: '10:00',
+            endTime: '14:00',
+            status: 'postponed',
+          },
+        },
+      }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(createHtml({
+        props: {
+          meetup: {
+            id: 'canceled-meetup',
+            title: 'Canceled Meetup',
+            date: '2099-05-18',
+            startTime: '10:00',
+            endTime: '14:00',
+            status: 'cancelled',
+          },
+        },
+      }), { status: 200 }))
+
+    vi.stubGlobal('fetch', fetchMock)
+
+    const cache = await scrapeCodersMuMeetups()
+
+    expect(cache.meetups).toMatchObject([
+      {
+        id: 'postponed-meetup',
+        status: 'postponed',
+      },
+      {
+        id: 'canceled-meetup',
+        status: 'canceled',
+      },
+    ])
+  })
 })

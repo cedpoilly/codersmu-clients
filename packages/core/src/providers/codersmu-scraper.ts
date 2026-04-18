@@ -43,6 +43,7 @@ interface RawMeetup {
   rsvpLink?: string | null
   mapUrl?: string | null
   parkingLocation?: string | null
+  status?: string | null
 }
 
 interface IndexPayload {
@@ -260,6 +261,18 @@ function deriveStatus(startsAt: string, endsAt: string): Meetup['status'] {
   return 'completed'
 }
 
+function normalizeStatus(rawStatus: string | null | undefined, startsAt: string, endsAt: string): Meetup['status'] {
+  switch (rawStatus?.trim().toLowerCase()) {
+    case 'postponed':
+      return 'postponed'
+    case 'canceled':
+    case 'cancelled':
+      return 'canceled'
+    default:
+      return deriveStatus(startsAt, endsAt)
+  }
+}
+
 function normalizeSessions(rawSessions: RawSession[] | undefined): MeetupSession[] {
   return (rawSessions ?? []).map((session) => ({
     title: stripHtml(session.title),
@@ -305,7 +318,7 @@ function normalizeMeetup(rawMeetup: RawMeetup): Meetup {
     startsAt,
     endsAt,
     timezone: 'Indian/Mauritius',
-    status: deriveStatus(startsAt, endsAt),
+    status: normalizeStatus(rawMeetup.status, startsAt, endsAt),
     location: {
       name: venue,
       address,

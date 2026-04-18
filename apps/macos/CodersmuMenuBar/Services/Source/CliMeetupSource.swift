@@ -35,6 +35,11 @@ struct CliMeetupSource: MeetupSource {
     }
 
     let decoder = JSONDecoder()
+
+    if let response = try? decoder.decode(CliNextMeetupResponse.self, from: data) {
+      return response.meetup?.snapshot(lastSyncedAt: Date())
+    }
+
     let meetup = try decoder.decode(CliMeetup.self, from: data)
     return meetup.snapshot(lastSyncedAt: Date())
   }
@@ -185,6 +190,10 @@ private struct CliMeetup: Decodable {
     formatter.formatOptions = [.withInternetDateTime]
     return formatter.date(from: value)
   }
+}
+
+private struct CliNextMeetupResponse: Decodable {
+  let meetup: CliMeetup?
 }
 
 private enum CliMeetupSourceError: LocalizedError {

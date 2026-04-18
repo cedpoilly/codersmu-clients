@@ -4,9 +4,19 @@ import { fileURLToPath } from "node:url";
 
 const scriptDir = dirname(fileURLToPath(import.meta.url));
 const extensionDir = resolve(scriptDir, "..");
-const sourceDir = resolve(extensionDir, "../../packages/core/src");
 const vendorRoot = resolve(extensionDir, "vendor");
-const vendorDir = resolve(vendorRoot, "core");
+const sharedPackages = [
+  {
+    sourceDir: resolve(extensionDir, "../../packages/contracts/src"),
+    vendorDir: resolve(vendorRoot, "contracts"),
+    label: "contracts",
+  },
+  {
+    sourceDir: resolve(extensionDir, "../../packages/core/src"),
+    vendorDir: resolve(vendorRoot, "core"),
+    label: "core",
+  },
+];
 const lockDir = resolve(vendorRoot, ".sync-lock");
 
 async function exists(path) {
@@ -49,17 +59,31 @@ await acquireLock();
 let exitCode = 0;
 
 try {
-  if (await exists(sourceDir)) {
-    await rm(vendorDir, { force: true, recursive: true });
-    await cp(sourceDir, vendorDir, { recursive: true });
-    console.log("Synced shared core into vendor/core.");
-  } else if (await exists(vendorDir)) {
-    console.log("Shared core source not found; using existing vendored snapshot.");
-  } else {
+  const missingPackages = [];
+  let syncedPackages = 0;
+
+  for (const sharedPackage of sharedPackages) {
+    if (await exists(sharedPackage.sourceDir)) {
+      await rm(sharedPackage.vendorDir, { force: true, recursive: true });
+      await cp(sharedPackage.sourceDir, sharedPackage.vendorDir, { recursive: true });
+      syncedPackages += 1;
+      continue;
+    }
+
+    if (!await exists(sharedPackage.vendorDir)) {
+      missingPackages.push(sharedPackage.label);
+    }
+  }
+
+  if (missingPackages.length > 0) {
     console.error(
-      "Cannot sync shared core: packages/core/src is missing and no vendored snapshot exists in apps/raycast/vendor/core.",
+      `Cannot sync shared packages: missing source and vendored snapshot for ${missingPackages.join(", ")}.`,
     );
     exitCode = 1;
+  } else if (syncedPackages > 0) {
+    console.log("Synced shared contracts and core into vendor/.");
+  } else {
+    console.log("Shared package sources not found; using existing vendored snapshots.");
   }
 } finally {
   await rm(lockDir, { force: true, recursive: true });
