@@ -2,8 +2,9 @@ import { isMeetupCacheFresh, readMeetupCache, writeMeetupCache } from './cache'
 import { getMeetup, getPastMeetups, getUpcomingMeetups } from './meetups'
 import { CacheMeetupProvider } from './providers/cache-provider'
 import { fetchFrontendMuMeetups } from './providers/frontendmu-api'
-import { scrapeCodersMuMeetups } from './providers/codersmu-scraper'
 import type { Meetup, MeetupCache, MeetupListState, MeetupProvider } from './types'
+
+const FETCH_TIMEOUT_MS = 10_000
 
 interface ResolveDefaultMeetupProviderOptions {
   forceRefresh?: boolean
@@ -12,24 +13,65 @@ interface ResolveDefaultMeetupProviderOptions {
 
 export type DefaultMeetupQueryOptions = ResolveDefaultMeetupProviderOptions
 
+function normalizeBaseUrl(value: string | undefined): string | undefined {
+  const trimmed = value?.trim()
+
+  if (!trimmed) {
+    return undefined
+  }
+
+  return trimmed.replace(/\/+$/, '')
+}
+
+function getConfiguredHostedApiBaseUrl(): string | undefined {
+  return normalizeBaseUrl(process.env.CODERSMU_HOSTED_API_BASE_URL)
+}
+
+async function fetchHostedMeetupCache(baseUrl: string): Promise<MeetupCache> {
+  const response = await fetch(`${baseUrl}/meetups?state=all`, {
+    headers: {
+      accept: 'application/json',
+      'user-agent': 'codersmu-clients/0.0.0-prototype.1 (+https://coders.mu)',
+    },
+    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+  })
+
+  if (!response.ok) {
+    throw new Error(`Request failed for ${baseUrl}/meetups: ${response.status} ${response.statusText}`)
+  }
+
+  const payload = await response.json() as { meetups: Meetup[] }
+  return {
+    source: `${baseUrl}/meetups`,
+    scrapedAt: new Date().toISOString(),
+    meetups: payload.meetups,
+  }
+}
+
 async function fetchLiveMeetupCache(): Promise<MeetupCache> {
-  try {
-    return await fetchFrontendMuMeetups()
-  }
-  catch (apiError) {
+  const hostedApiBaseUrl = getConfiguredHostedApiBaseUrl()
+
+  if (hostedApiBaseUrl) {
     try {
-      return await scrapeCodersMuMeetups()
+      return await fetchHostedMeetupCache(hostedApiBaseUrl)
     }
-    catch (scrapeError) {
-      throw new Error(
-        `Coders.mu API request failed and scraper fallback also failed. API: ${
-          apiError instanceof Error ? apiError.message : String(apiError)
-        }. Scraper: ${
-          scrapeError instanceof Error ? scrapeError.message : String(scrapeError)
-        }`,
-      )
+    catch (hostedError) {
+      try {
+        return await fetchFrontendMuMeetups()
+      }
+      catch (apiError) {
+        throw new Error(
+          `Hosted Coders.mu API request failed and Frontend.mu API fallback also failed. Hosted: ${
+            hostedError instanceof Error ? hostedError.message : String(hostedError)
+          }. API: ${
+            apiError instanceof Error ? apiError.message : String(apiError)
+          }`,
+        )
+      }
     }
   }
+
+  return fetchFrontendMuMeetups()
 }
 
 export async function resolveDefaultMeetupProvider(options?: ResolveDefaultMeetupProviderOptions): Promise<MeetupProvider> {

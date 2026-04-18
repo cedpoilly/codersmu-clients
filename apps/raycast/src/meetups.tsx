@@ -64,7 +64,9 @@ export default function MeetupsCommand() {
     return normalized === "canceled" || normalized === "cancelled";
   };
 
-  const live = meetups.filter((meetup) => getMeetupLifecycleStatus(meetup) === "ongoing");
+  const live = meetups.filter(
+    (meetup) => getMeetupLifecycleStatus(meetup) === "ongoing",
+  );
   const upcoming = meetups.filter((meetup) => {
     if (meetup.status.trim().toLowerCase() === "postponed") {
       return true;

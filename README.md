@@ -2,7 +2,7 @@
 
 Exploratory workspace for Coders.mu clients.
 
-This repository is still in the exploratory phase. The CLI surface, internal package layout, scraper-backed data source, and integration strategy can all change while the product direction is still being tested.
+This repository is still in the exploratory phase. The CLI surface, internal package layout, API integration strategy, and client boundaries can all change while the product direction is still being tested.
 
 ## Current Clients
 
@@ -20,7 +20,7 @@ The primary client today is the CLI at the repository root.
 The Raycast client lives in `apps/raycast`.
 
 - local extension prototype
-- uses the shared scraper-backed core logic directly
+- uses the shared core logic directly
 - good enough for local experimentation
 - not published to the Raycast Store yet
 
@@ -29,7 +29,7 @@ The Raycast client lives in `apps/raycast`.
 - exploratory prototype, not a stable product
 - GitHub-first distribution, no npm release yet
 - public `coders.mu` API is now the primary data source
-- scraper fallback still exists as a compatibility path if the API is temporarily unavailable
+- hosted and public API paths are both supported during rollout
 - CLI and Raycast use a 1-hour cache window during business hours by default, and a 6-hour window outside them
 
 ## CLI
@@ -161,4 +161,4 @@ GitHub Actions already exist for CI and a future npm release path, but npm publi
 
 ## API Integration
 
-The shared core now reads meetup data from the public `coders.mu` API at `https://coders.mu/api/public/v1/meetups` and keeps the shared `Meetup` type aligned to that API contract. The legacy scraper remains available only as a fallback path.
+The shared core now reads meetup data from the public `coders.mu` API at `https://coders.mu/api/public/v1/meetups` and keeps the shared `Meetup` type aligned to that API contract. Hosted API rollout is layered on top of that same JSON source.

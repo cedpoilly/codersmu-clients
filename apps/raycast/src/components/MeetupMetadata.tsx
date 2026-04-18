@@ -147,20 +147,12 @@ export function MeetupDetailMetadata({ meetup }: { meetup: Meetup }) {
         />
       ) : null}
       {links.rsvp ? (
-        <Detail.Metadata.Link
-          title="RSVP"
-          target={links.rsvp}
-          text="Open"
-        />
+        <Detail.Metadata.Link title="RSVP" target={links.rsvp} text="Open" />
       ) : meetup.acceptingRsvp ? (
         <Detail.Metadata.Label title="RSVP" text="Open on website" />
       ) : null}
       {links.map ? (
-        <Detail.Metadata.Link
-          title="Map"
-          target={links.map}
-          text="Open"
-        />
+        <Detail.Metadata.Link title="Map" target={links.map} text="Open" />
       ) : null}
       {links.parking ? (
         <Detail.Metadata.Link
