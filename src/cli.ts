@@ -28,6 +28,7 @@ import type { Meetup, MeetupListState, MeetupProvider, MeetupSession, MeetupSpea
 
 const require = createRequire(import.meta.url)
 const { version: CLI_VERSION } = require('../package.json') as { version: string }
+const DEFAULT_CLI_HOSTED_API_BASE_URL = 'https://codersmu.lepopquiz.app'
 
 interface CliOptions {
   json: boolean
@@ -47,6 +48,12 @@ const COLORS = {
 }
 const DEFAULT_USE_COLOR = Boolean(process.stdout.isTTY) && !('NO_COLOR' in process.env)
 let useColor = DEFAULT_USE_COLOR
+
+function configureCliHostedApi(): void {
+  process.env.CODERSMU_HOSTED_API_BASE_URL ||= DEFAULT_CLI_HOSTED_API_BASE_URL
+}
+
+configureCliHostedApi()
 
 function colorize(color: keyof typeof COLORS, value: string): string {
   if (!useColor) {
