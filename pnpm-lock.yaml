@@ -8,9 +8,6 @@ importers:
 
   .:
     devDependencies:
-      '@codersmu/contracts':
-        specifier: workspace:*
-        version: link:packages/contracts
       '@types/node':
         specifier: ^24.5.2
         version: 24.12.0
@@ -24,13 +21,7 @@ importers:
         specifier: ^4.1.2
         version: 4.1.2(@types/node@24.12.0)(vite@8.0.3(@types/node@24.12.0))
 
-  packages/contracts: {}
-
-  packages/core:
-    dependencies:
-      '@codersmu/contracts':
-        specifier: workspace:*
-        version: link:../contracts
+  packages/core: {}
 
 packages:
 
