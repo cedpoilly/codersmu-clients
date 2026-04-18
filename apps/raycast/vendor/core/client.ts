@@ -1,5 +1,5 @@
 import { isMeetupCacheFresh, readMeetupCache, writeMeetupCache } from './cache'
-import { getPastMeetups, getSortedMeetups, getUpcomingMeetups } from './meetups'
+import { getMeetup, getPastMeetups, getSortedMeetups, getUpcomingMeetups } from './meetups'
 import { CacheMeetupProvider } from './providers/cache-provider'
 import { scrapeCodersMuMeetups } from './providers/codersmu-scraper'
 import type { Meetup, MeetupCache, MeetupListState, MeetupProvider } from './types'
@@ -8,6 +8,8 @@ interface ResolveDefaultMeetupProviderOptions {
   forceRefresh?: boolean
   allowStaleOnError?: boolean
 }
+
+export type DefaultMeetupQueryOptions = ResolveDefaultMeetupProviderOptions
 
 function sortMeetupsAscending(meetups: Meetup[]): Meetup[] {
   return [...meetups].sort((left, right) => Date.parse(left.startsAt) - Date.parse(right.startsAt))
@@ -42,19 +44,33 @@ export async function refreshDefaultMeetupCache(): Promise<{ cache: MeetupCache,
   return { cache, cacheFile }
 }
 
+export async function fetchMeetupBySelector(selector: string, options?: DefaultMeetupQueryOptions): Promise<Meetup | undefined> {
+  const provider = await resolveDefaultMeetupProvider(options)
+  return getMeetup(provider, selector)
+}
+
+export async function fetchMeetupList(state: MeetupListState, options?: DefaultMeetupQueryOptions): Promise<Meetup[]> {
+  const provider = await resolveDefaultMeetupProvider(options)
+  return getMeetupsForList(provider, state)
+}
+
+export async function fetchNextMeetup(options?: DefaultMeetupQueryOptions): Promise<Meetup | undefined> {
+  return fetchMeetupBySelector('next', options)
+}
+
 export async function getMeetupsForList(provider: MeetupProvider, state: MeetupListState): Promise<Meetup[]> {
   if (state === 'past') {
     return getPastMeetups(provider)
   }
 
+  const upcomingMeetups = await getUpcomingMeetups(provider)
+
   if (state === 'all') {
     return [
-      ...await getUpcomingMeetups(provider),
+      ...upcomingMeetups,
       ...await getPastMeetups(provider),
     ]
   }
 
-  const now = Date.now()
-  return sortMeetupsAscending(await provider.listMeetups())
-    .filter((meetup) => Date.parse(meetup.endsAt) >= now)
+  return upcomingMeetups
 }

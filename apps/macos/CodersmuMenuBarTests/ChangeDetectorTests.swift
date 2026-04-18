@@ -50,3 +50,185 @@ final class ChangeDetectorTests: XCTestCase {
     )
   }
 }
+
+final class CodersMuAPIClientTests: XCTestCase {
+  override func tearDown() {
+    MockURLProtocol.requestHandler = nil
+    super.tearDown()
+  }
+
+  func testFetchNextMeetupResponseSkipsCanceledCandidates() async throws {
+    let indexHTML = try makeDataPageHTML([
+      "props": [
+        "meetups": [
+          [
+            "id": "canceled-meetup",
+            "title": "Canceled Meetup",
+            "date": "2099-04-18",
+            "startTime": "10:00",
+            "endTime": "14:00",
+          ],
+          [
+            "id": "scheduled-meetup",
+            "title": "Scheduled Meetup",
+            "date": "2099-05-18",
+            "startTime": "10:00",
+            "endTime": "14:00",
+          ],
+        ],
+      ],
+    ])
+
+    let canceledHTML = try makeDataPageHTML([
+      "props": [
+        "meetup": [
+          "id": "canceled-meetup",
+          "title": "Canceled Meetup",
+          "date": "2099-04-18",
+          "startTime": "10:00",
+          "endTime": "14:00",
+          "status": "cancelled",
+        ],
+      ],
+    ])
+
+    let scheduledHTML = try makeDataPageHTML([
+      "props": [
+        "meetup": [
+          "id": "scheduled-meetup",
+          "title": "Scheduled Meetup",
+          "date": "2099-05-18",
+          "startTime": "10:00",
+          "endTime": "14:00",
+        ],
+      ],
+    ])
+
+    let responses = [
+      "https://coders.mu/meetups/": indexHTML,
+      "https://coders.mu/meetup/canceled-meetup": canceledHTML,
+      "https://coders.mu/meetup/scheduled-meetup": scheduledHTML,
+    ]
+
+    MockURLProtocol.requestHandler = { request in
+      guard
+        let url = request.url?.absoluteString,
+        let body = responses[url]
+      else {
+        throw URLError(.badURL)
+      }
+
+      let response = HTTPURLResponse(
+        url: request.url!,
+        statusCode: 200,
+        httpVersion: nil,
+        headerFields: ["Content-Type": "text/html; charset=utf-8"]
+      )!
+      return (response, Data(body.utf8))
+    }
+
+    let configuration = URLSessionConfiguration.ephemeral
+    configuration.protocolClasses = [MockURLProtocol.self]
+    let session = URLSession(configuration: configuration)
+    let client = CodersMuAPIClient(session: session)
+
+    let response = try await client.fetchNextMeetupResponse()
+
+    XCTAssertEqual(response.meetup?.id, "scheduled-meetup")
+    XCTAssertEqual(response.meetup?.status, .scheduled)
+  }
+}
+
+final class CliMeetupSourceTests: XCTestCase {
+  @MainActor
+  func testDecodeSnapshotAcceptsLegacyAndWrappedNextMeetupJSON() throws {
+    let meetupPayload: [String: Any] = [
+      "slug": "sample-meetup",
+      "title": "Sample Meetup",
+      "summary": "Sample summary",
+      "startsAt": "2099-05-18T06:00:00.000Z",
+      "endsAt": "2099-05-18T10:00:00.000Z",
+      "status": "scheduled",
+      "location": [
+        "name": "Spoon Consulting Offices",
+        "address": "Moka",
+        "city": "Moka",
+      ],
+      "seatsAvailable": 12,
+      "acceptingRsvp": true,
+      "links": [
+        "meetup": "https://coders.mu/meetup/sample-meetup",
+        "rsvp": "https://lu.ma/sample-meetup",
+      ],
+    ]
+
+    let legacyJSON = try makeJSONString(meetupPayload)
+    let wrappedJSON = try makeJSONString(["meetup": meetupPayload])
+    let lastSyncedAt = Date(timeIntervalSince1970: 1_800_000_000)
+    let source = CliMeetupSource()
+
+    let legacySnapshot = try source.decodeSnapshot(from: legacyJSON, lastSyncedAt: lastSyncedAt)
+    let wrappedSnapshot = try source.decodeSnapshot(from: wrappedJSON, lastSyncedAt: lastSyncedAt)
+
+    XCTAssertEqual(legacySnapshot, wrappedSnapshot)
+    XCTAssertEqual(legacySnapshot?.slug, "sample-meetup")
+    XCTAssertEqual(legacySnapshot?.status, .upcoming)
+    XCTAssertEqual(legacySnapshot?.rsvpURL?.absoluteString, "https://lu.ma/sample-meetup")
+  }
+}
+
+private final class MockURLProtocol: URLProtocol {
+  nonisolated(unsafe) static var requestHandler: ((URLRequest) throws -> (HTTPURLResponse, Data))?
+
+  override class func canInit(with request: URLRequest) -> Bool {
+    true
+  }
+
+  override class func canonicalRequest(for request: URLRequest) -> URLRequest {
+    request
+  }
+
+  override func startLoading() {
+    guard let handler = MockURLProtocol.requestHandler else {
+      client?.urlProtocol(self, didFailWithError: URLError(.badServerResponse))
+      return
+    }
+
+    do {
+      let (response, data) = try handler(request)
+      client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
+      client?.urlProtocol(self, didLoad: data)
+      client?.urlProtocolDidFinishLoading(self)
+    } catch {
+      client?.urlProtocol(self, didFailWithError: error)
+    }
+  }
+
+  override func stopLoading() {}
+}
+
+private func makeDataPageHTML(_ payload: [String: Any]) throws -> String {
+  let json = try makeJSONString(payload)
+  let encoded = json
+    .replacingOccurrences(of: "&", with: "&amp;")
+    .replacingOccurrences(of: "\"", with: "&quot;")
+    .replacingOccurrences(of: "<", with: "&lt;")
+    .replacingOccurrences(of: ">", with: "&gt;")
+    .replacingOccurrences(of: "'", with: "&#039;")
+
+  return """
+  <html>
+    <body>
+      <div id="app" data-page="\(encoded)"></div>
+    </body>
+  </html>
+  """
+}
+
+private func makeJSONString(_ payload: [String: Any]) throws -> String {
+  let data = try JSONSerialization.data(withJSONObject: payload, options: [.sortedKeys])
+  guard let string = String(data: data, encoding: .utf8) else {
+    throw URLError(.cannotDecodeRawData)
+  }
+  return string
+}

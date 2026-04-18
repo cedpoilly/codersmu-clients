@@ -8,12 +8,14 @@ import { parseArgs } from 'node:util'
 import {
   buildCalendarUrls,
   buildIcs,
-  getMeetup,
-  getMeetupsForList,
+  createMeetupListResponse,
+  createMeetupResponse,
+  createNextMeetupResponse,
+  fetchMeetupBySelector,
+  fetchMeetupList,
   refreshDefaultMeetupCache,
-  resolveDefaultMeetupProvider,
 } from '@codersmu/core'
-import type { Meetup, MeetupListState, MeetupProvider, MeetupSession, MeetupSpeaker } from '@codersmu/core'
+import type { DefaultMeetupQueryOptions, Meetup, MeetupListState, MeetupSession, MeetupSpeaker } from '@codersmu/core'
 
 const require = createRequire(import.meta.url)
 const { version: CLI_VERSION } = require('../package.json') as { version: string }
@@ -45,11 +47,11 @@ function colorize(color: keyof typeof COLORS, value: string): string {
   return `${COLORS[color]}${value}${COLORS.reset}`
 }
 
-async function resolveMeetupProvider(options: CliOptions): Promise<MeetupProvider> {
-  return resolveDefaultMeetupProvider({
+function getDefaultMeetupQueryOptions(options: CliOptions): DefaultMeetupQueryOptions {
+  return {
     forceRefresh: options.refresh,
     allowStaleOnError: !options.refresh,
-  })
+  }
 }
 
 function renderVersion(): void {
@@ -318,14 +320,13 @@ async function handleCacheRefresh(options: CliOptions): Promise<void> {
 }
 
 async function handleMeetupList(options: CliOptions): Promise<void> {
-  const provider = await resolveMeetupProvider(options)
   const state = parseMeetupListState(options.state)
   const limit = parseLimit(options.limit)
-  const meetups = await getMeetupsForList(provider, state)
+  const meetups = await fetchMeetupList(state, getDefaultMeetupQueryOptions(options))
   const limitedMeetups = typeof limit === 'number' ? meetups.slice(0, limit) : meetups
 
   if (options.json) {
-    renderJson(limitedMeetups)
+    renderJson(createMeetupListResponse(limitedMeetups))
     return
   }
 
@@ -356,16 +357,27 @@ async function handleMeetupList(options: CliOptions): Promise<void> {
 }
 
 async function handleMeetupView(selector: string, options: CliOptions): Promise<void> {
-  const provider = await resolveMeetupProvider(options)
-  const meetup = await getMeetup(provider, selector)
+  const meetup = await fetchMeetupBySelector(selector, getDefaultMeetupQueryOptions(options))
+  const isNextSelector = selector === 'next' || selector === 'current'
+
   if (!meetup) {
+    if (options.json && isNextSelector) {
+      renderJson(createNextMeetupResponse(undefined))
+      return
+    }
+
     console.error(getMeetupNotFoundMessage(selector))
     process.exitCode = 1
     return
   }
 
   if (options.json) {
-    renderJson(meetup)
+    if (isNextSelector) {
+      renderJson(createNextMeetupResponse(meetup))
+      return
+    }
+
+    renderJson(createMeetupResponse(meetup))
     return
   }
 
@@ -378,8 +390,7 @@ async function handleMeetupView(selector: string, options: CliOptions): Promise<
 }
 
 async function handleMeetupCalendar(selector: string, options: CliOptions): Promise<void> {
-  const provider = await resolveMeetupProvider(options)
-  const meetup = await getMeetup(provider, selector)
+  const meetup = await fetchMeetupBySelector(selector, getDefaultMeetupQueryOptions(options))
   if (!meetup) {
     console.error(getMeetupNotFoundMessage(selector))
     process.exitCode = 1

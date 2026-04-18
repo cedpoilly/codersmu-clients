@@ -6,7 +6,7 @@ struct CodersmuMenuBarApp: App {
   @State private var appModel: AppModel
 
   init() {
-    let source = CliMeetupSource()
+    let source = HTTPMeetupSource()
     let snapshotStore = ApplicationSupportSnapshotStore()
     let preferencesStore = AppPreferencesStore()
     let notificationService = UserNotificationService()

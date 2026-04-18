@@ -30,13 +30,24 @@ struct CliMeetupSource: MeetupSource {
       throw CliMeetupSourceError.commandFailed(errorOutput.trimmedNilIfEmpty ?? "Unknown CLI error.")
     }
 
+    return try decodeSnapshot(from: output, lastSyncedAt: Date())
+  }
+
+  func decodeSnapshot(from output: String, lastSyncedAt: Date) throws -> MeetupSnapshot? {
     guard let data = output.data(using: .utf8) else {
       throw CliMeetupSourceError.invalidOutput("CLI did not return UTF-8 output.")
     }
 
     let decoder = JSONDecoder()
+
+    let topLevelObject = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any]
+    if let topLevelObject, topLevelObject.keys.contains("meetup") {
+      let response = try decoder.decode(CliNextMeetupResponse.self, from: data)
+      return response.meetup?.snapshot(lastSyncedAt: lastSyncedAt)
+    }
+
     let meetup = try decoder.decode(CliMeetup.self, from: data)
-    return meetup.snapshot(lastSyncedAt: Date())
+    return meetup.snapshot(lastSyncedAt: lastSyncedAt)
   }
 }
 
@@ -185,6 +196,10 @@ private struct CliMeetup: Decodable {
     formatter.formatOptions = [.withInternetDateTime]
     return formatter.date(from: value)
   }
+}
+
+private struct CliNextMeetupResponse: Decodable {
+  let meetup: CliMeetup?
 }
 
 private enum CliMeetupSourceError: LocalizedError {

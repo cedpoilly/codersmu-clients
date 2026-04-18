@@ -1,7 +1,7 @@
 {
-  "name": "@codersmu/core",
+  "name": "@codersmu/contracts",
   "version": "0.0.0-prototype.1",
-  "description": "Exploratory shared Coders.mu client logic",
+  "description": "Canonical Coders.mu client contracts",
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.mjs",
@@ -28,12 +28,8 @@
   "scripts": {
     "build": "tsdown",
     "dev": "tsdown --watch",
-    "test": "vitest run --config vitest.config.ts",
     "typecheck": "tsc --noEmit",
-    "check": "pnpm typecheck && pnpm test && pnpm build"
-  },
-  "dependencies": {
-    "@codersmu/contracts": "workspace:*"
+    "check": "pnpm typecheck && pnpm build"
   },
   "license": "MIT"
 }

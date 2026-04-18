@@ -9,7 +9,11 @@ function nowUtc(): number {
 }
 
 export function isPastMeetup(meetup: Meetup, now = nowUtc()): boolean {
-  return Date.parse(meetup.endsAt) < now || meetup.status === 'completed'
+  return (
+    Date.parse(meetup.endsAt) < now
+    || meetup.status === 'completed'
+    || meetup.status === 'canceled'
+  )
 }
 
 export async function getSortedMeetups(provider: MeetupProvider): Promise<Meetup[]> {
@@ -20,7 +24,7 @@ export async function getCurrentOrNextMeetup(provider: MeetupProvider): Promise<
   const meetups = await getSortedMeetups(provider)
   const now = nowUtc()
 
-  return meetups.find((meetup) => Date.parse(meetup.endsAt) >= now)
+  return meetups.find((meetup) => meetup.status !== 'canceled' && Date.parse(meetup.endsAt) >= now)
 }
 
 export async function getUpcomingMeetups(provider: MeetupProvider): Promise<Meetup[]> {
