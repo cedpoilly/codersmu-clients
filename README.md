@@ -180,3 +180,5 @@ That probe now validates:
 - detail lookup by both derived slug and raw meetup id
 
 Set `CODERSMU_HOSTED_API_BASE_URL` first if you want to check a different deployment target. Use `CODERSMU_HOSTED_API_TIMEOUT_SECONDS` to tighten or relax the live probe timeout.
+
+That same probe is also available in GitHub Actions through the `Hosted API` workflow on an hourly schedule and manual dispatch. Treat it as a live uptime check, not as proof that a freshly pushed commit is already deployed.

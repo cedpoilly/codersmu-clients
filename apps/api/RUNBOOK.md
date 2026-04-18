@@ -23,6 +23,13 @@ Full live smoke test from this repository:
 npm run check:hosted-api
 ```
 
+The same probe now runs in GitHub Actions via the `Hosted API` workflow:
+
+- hourly on a schedule
+- on manual `workflow_dispatch`
+
+Treat that workflow as an uptime probe for the live deployment, not proof that the latest Git commit is already running in Coolify.
+
 Expected health response:
 
 ```json
@@ -35,6 +42,7 @@ Expected health response:
 2. Trigger a fresh Coolify deployment for `codersmu-api`.
 3. Wait for the deployment to finish.
 4. Run the verify steps above.
+5. If you want a GitHub-side confirmation too, run the `Hosted API` workflow manually after deployment finishes.
 
 If the health check passes but the UI still shows stale state in Coolify, trust the public health check over a stale page badge.
 
@@ -95,9 +103,10 @@ If the service looks broken:
 
 1. Check `https://codersmu.lepopquiz.app/health`.
 2. Run `npm run check:hosted-api`.
-3. Inspect the latest Coolify runtime logs for:
+3. Check the latest `Hosted API` GitHub Actions run if you need an externalized probe result.
+4. Inspect the latest Coolify runtime logs for:
    - `request_failed`
    - `provider_refresh_failed`
    - `provider_stale_cache_reused`
-4. If upstream is failing but stale cache reuse is happening, this is degraded but not down.
-5. If health is down and logs are empty, suspect container/process startup failure.
+5. If upstream is failing but stale cache reuse is happening, this is degraded but not down.
+6. If health is down and logs are empty, suspect container/process startup failure.
