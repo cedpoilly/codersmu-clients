@@ -16,7 +16,7 @@ struct CodersMuAPIClient {
       do {
         return try await fetchHostedNextMeetupResponse(from: hostedAPIBaseURL)
       } catch {
-        // Fall back to the direct site fetch until the hosted API is fully deployed.
+        // Keep the direct-site path as a resilience fallback if the hosted API is unavailable.
       }
     }
 

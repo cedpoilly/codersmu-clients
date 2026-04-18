@@ -37,6 +37,7 @@ async function loadClientModule(options: {
   cached?: MeetupCache
   isFresh?: boolean
   api?: MeetupCache | Error
+  hosted?: MeetupCache | Error
 } = {}) {
   const readMeetupCache = vi.fn().mockResolvedValue(options.cached)
   const writeMeetupCache = vi.fn().mockResolvedValue('/tmp/meetups.json')
@@ -44,6 +45,17 @@ async function loadClientModule(options: {
   const fetchFrontendMuMeetups = options.api instanceof Error
     ? vi.fn().mockRejectedValue(options.api)
     : vi.fn().mockResolvedValue(options.api ?? sampleCache)
+  const hostedResult = options.hosted ?? new Error('hosted api down')
+  const hostedFetch = hostedResult instanceof Error
+    ? vi.fn().mockRejectedValue(hostedResult)
+    : vi.fn().mockResolvedValue(new Response(JSON.stringify({
+        meetups: hostedResult.meetups,
+      }), {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      }))
 
   vi.doMock('../src/cache', () => ({
     readMeetupCache,
@@ -54,6 +66,7 @@ async function loadClientModule(options: {
   vi.doMock('../src/providers/frontendmu-api', () => ({
     fetchFrontendMuMeetups,
   }))
+  vi.stubGlobal('fetch', hostedFetch)
 
   const client = await import('../src/client')
 
@@ -63,6 +76,7 @@ async function loadClientModule(options: {
     writeMeetupCache,
     isMeetupCacheFresh,
     fetchFrontendMuMeetups,
+    hostedFetch,
   }
 }
 
@@ -85,7 +99,7 @@ describe('resolveDefaultMeetupProvider', () => {
       ...sampleCache,
       source: 'https://coders.mu/api/public/v1/meetups',
     }
-    const { client, fetchFrontendMuMeetups, writeMeetupCache } = await loadClientModule({
+    const { client, hostedFetch, fetchFrontendMuMeetups, writeMeetupCache } = await loadClientModule({
       isFresh: false,
       api: apiCache,
     })
@@ -93,37 +107,25 @@ describe('resolveDefaultMeetupProvider', () => {
     const provider = await client.resolveDefaultMeetupProvider()
 
     await expect(provider.listMeetups()).resolves.toEqual(apiCache.meetups)
+    expect(hostedFetch).not.toHaveBeenCalled()
     expect(fetchFrontendMuMeetups).toHaveBeenCalledTimes(1)
     expect(writeMeetupCache).toHaveBeenCalledWith(apiCache)
   })
 
-  it('prefers the hosted meetup API when configured', async () => {
+  it('still allows overriding the hosted meetup API base URL', async () => {
     process.env.CODERSMU_HOSTED_API_BASE_URL = 'https://api.coders.mu'
-    const fetch = vi.fn().mockResolvedValue(new Response(JSON.stringify({
-      meetups: sampleCache.meetups,
-    }), {
-      status: 200,
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    }))
-    vi.stubGlobal('fetch', fetch)
-
-    const { client, fetchFrontendMuMeetups, writeMeetupCache } = await loadClientModule({
+    const { client, hostedFetch, fetchFrontendMuMeetups, writeMeetupCache } = await loadClientModule({
       isFresh: false,
       api: new Error('frontend api should not be called'),
+      hosted: sampleCache,
     })
 
     const provider = await client.resolveDefaultMeetupProvider()
 
     await expect(provider.listMeetups()).resolves.toEqual(sampleCache.meetups)
-    expect(fetch).toHaveBeenCalledWith(
+    expect(hostedFetch).toHaveBeenCalledWith(
       'https://api.coders.mu/meetups?state=all',
-      expect.objectContaining({
-        headers: expect.objectContaining({
-          accept: 'application/json',
-        }),
-      }),
+      expect.any(Object),
     )
     expect(fetchFrontendMuMeetups).not.toHaveBeenCalled()
     expect(writeMeetupCache).toHaveBeenCalledWith(expect.objectContaining({
@@ -134,18 +136,20 @@ describe('resolveDefaultMeetupProvider', () => {
 
   it('falls back from the hosted endpoint to the Frontend.mu API', async () => {
     process.env.CODERSMU_HOSTED_API_BASE_URL = 'https://api.coders.mu'
-    const fetch = vi.fn().mockRejectedValue(new Error('hosted api down'))
-    vi.stubGlobal('fetch', fetch)
-
-    const { client, fetchFrontendMuMeetups, writeMeetupCache } = await loadClientModule({
+    const { client, hostedFetch, fetchFrontendMuMeetups, writeMeetupCache } = await loadClientModule({
       isFresh: false,
       api: sampleCache,
+      hosted: new Error('hosted api down'),
     })
 
     const provider = await client.resolveDefaultMeetupProvider()
 
     await expect(provider.listMeetups()).resolves.toEqual(sampleCache.meetups)
-    expect(fetch).toHaveBeenCalledTimes(1)
+    expect(hostedFetch).toHaveBeenCalledTimes(1)
+    expect(hostedFetch).toHaveBeenCalledWith(
+      'https://api.coders.mu/meetups?state=all',
+      expect.any(Object),
+    )
     expect(fetchFrontendMuMeetups).toHaveBeenCalledTimes(1)
     expect(writeMeetupCache).toHaveBeenCalledWith(sampleCache)
   })

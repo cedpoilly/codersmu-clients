@@ -28,8 +28,8 @@ The Raycast client lives in `apps/raycast`.
 
 - exploratory prototype, not a stable product
 - GitHub-first distribution, no npm release yet
-- public `coders.mu` API is now the primary data source
-- hosted and public API paths are both supported during rollout
+- public `coders.mu` API remains the default client data source
+- the hosted API at `https://codersmu.lepopquiz.app` is available as an explicit override path
 - CLI and Raycast use a 1-hour cache window during business hours by default, and a 6-hour window outside them
 
 ## CLI
@@ -161,4 +161,4 @@ GitHub Actions already exist for CI and a future npm release path, but npm publi
 
 ## API Integration
 
-The shared core now reads meetup data from the public `coders.mu` API at `https://coders.mu/api/public/v1/meetups` and keeps the shared `Meetup` type aligned to that API contract. Hosted API rollout is layered on top of that same JSON source.
+The shared core reads meetup data from the public `coders.mu` API at `https://coders.mu/api/public/v1/meetups` by default. If you want clients to prefer the deployed hosted edge at `https://codersmu.lepopquiz.app`, set `CODERSMU_HOSTED_API_BASE_URL` explicitly; the hosted service itself still reads from the same upstream JSON contract.
