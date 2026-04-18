@@ -28,6 +28,7 @@
     "typecheck:core": "pnpm --filter @codersmu/core typecheck",
     "typecheck:api": "pnpm --filter @codersmu/api typecheck",
     "check": "pnpm typecheck && pnpm --filter @codersmu/core check && pnpm --filter @codersmu/api check && pnpm build",
+    "check:hosted-api": "./scripts/check-hosted-api.sh",
     "release:check": "pnpm check && npm pack --dry-run"
   },
   "keywords": [
