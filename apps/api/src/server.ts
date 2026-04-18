@@ -1,5 +1,6 @@
 import { createServer } from 'node:http'
 
+import { logEvent } from './logger'
 import { handleMeetupBySlugRequest } from './routes/meetup-by-slug'
 import { handleMeetupListRequest } from './routes/meetups'
 import { handleNextMeetupRequest } from './routes/next-meetup'
@@ -13,36 +14,70 @@ function normalizePathname(pathname: string): string {
 }
 
 export async function handleRequest(request: Request): Promise<Response> {
+  const startedAt = Date.now()
+
   if (request.method !== 'GET' && request.method !== 'HEAD') {
-    return Response.json({ error: 'Method not allowed.' }, { status: 405 })
+    const response = Response.json({ error: 'Method not allowed.' }, { status: 405 })
+    const url = new URL(request.url)
+    logEvent('warn', 'request_completed', {
+      method: request.method,
+      pathname: normalizePathname(url.pathname),
+      status: response.status,
+      durationMs: Date.now() - startedAt,
+    })
+    return response
   }
 
   const url = new URL(request.url)
   const pathname = normalizePathname(url.pathname)
+  let response: Response | undefined
 
   try {
     if (pathname === '/health') {
-      return Response.json({ ok: true })
+      response = Response.json({ ok: true })
+      return response
     }
 
     if (pathname === '/meetups') {
-      return handleMeetupListRequest(request)
+      response = await handleMeetupListRequest(request)
+      return response
     }
 
     if (pathname === '/meetups/next') {
-      return handleNextMeetupRequest()
+      response = await handleNextMeetupRequest()
+      return response
     }
 
     if (pathname.startsWith('/meetups/')) {
       const slug = decodeURIComponent(pathname.slice('/meetups/'.length))
-      return handleMeetupBySlugRequest(slug)
+      response = await handleMeetupBySlugRequest(slug)
+      return response
     }
 
-    return Response.json({ error: 'Not found.' }, { status: 404 })
+    response = Response.json({ error: 'Not found.' }, { status: 404 })
+    return response
   }
   catch (error) {
+    logEvent('error', 'request_failed', {
+      method: request.method,
+      pathname,
+      durationMs: Date.now() - startedAt,
+      error,
+    })
+
     const message = error instanceof Error ? error.message : 'Unexpected server error.'
-    return Response.json({ error: message }, { status: 500 })
+    response = Response.json({ error: message }, { status: 500 })
+    return response
+  }
+  finally {
+    if (response) {
+      logEvent(response.status >= 500 ? 'error' : response.status >= 400 ? 'warn' : 'info', 'request_completed', {
+        method: request.method,
+        pathname,
+        status: response.status,
+        durationMs: Date.now() - startedAt,
+      })
+    }
   }
 }
 
@@ -88,7 +123,10 @@ async function startServer() {
   })
 
   server.listen(port, () => {
-    console.log(`Coders.mu API listening on http://localhost:${port}`)
+    logEvent('info', 'server_started', {
+      port,
+      url: `http://localhost:${port}`,
+    })
   })
 }
 

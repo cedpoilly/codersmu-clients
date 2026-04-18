@@ -37,6 +37,7 @@ vi.mock('@codersmu/core', async (importOriginal) => {
 
 afterEach(() => {
   delete process.env.CODERSMU_UPSTREAM_API_BASE_URL
+  delete process.env.CODERSMU_API_LOG_LEVEL
   vi.clearAllMocks()
   vi.resetModules()
 })
@@ -47,6 +48,21 @@ function resetFetchFrontendMuMeetupsMock() {
 }
 
 describe('handleRequest', () => {
+  it('logs successful requests and provider refreshes in structured JSON', async () => {
+    process.env.CODERSMU_API_LOG_LEVEL = 'info'
+    resetFetchFrontendMuMeetupsMock()
+    const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+    const { handleRequest } = await import('../src/server')
+
+    const response = await handleRequest(new Request('http://localhost/meetups?state=all'))
+
+    expect(response.status).toBe(200)
+    expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('"event":"provider_refresh_started"'))
+    expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('"event":"provider_refresh_succeeded"'))
+    expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('"event":"request_completed"'))
+    expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('"pathname":"/meetups"'))
+  })
+
   it('treats HEAD health checks like GET', async () => {
     resetFetchFrontendMuMeetupsMock()
     const { handleRequest } = await import('../src/server')
@@ -137,7 +153,9 @@ describe('handleRequest', () => {
   it('reuses the last good provider when a refresh fails after the TTL', async () => {
     vi.useFakeTimers()
     vi.setSystemTime(new Date('2099-04-18T06:00:00.000Z'))
+    process.env.CODERSMU_API_LOG_LEVEL = 'info'
     resetFetchFrontendMuMeetupsMock()
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
     fetchFrontendMuMeetupsMock
       .mockResolvedValueOnce(sampleCache)
       .mockRejectedValueOnce(new Error('frontend api down'))
@@ -163,6 +181,8 @@ describe('handleRequest', () => {
     expect(fetchFrontendMuMeetupsMock).toHaveBeenNthCalledWith(2, {
       apiBaseUrl: 'https://coders.mu/api/public/v1',
     })
+    expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('"event":"provider_refresh_failed"'))
+    expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('"event":"provider_stale_cache_reused"'))
 
     vi.useRealTimers()
   })
