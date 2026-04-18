@@ -77,13 +77,43 @@ async function fetchJson(baseUrl, path) {
 }
 
 async function checkHealth(baseUrl) {
-  const healthPayload = await fetchJson(baseUrl, '/health')
+  const healthResponse = await fetchResponse(baseUrl, '/health')
+  const healthContentType = healthResponse.headers.get('content-type') ?? ''
+  assert(healthContentType.includes('application/json'), `GET /health returned unexpected content type "${healthContentType}".`)
+
+  const healthPayload = await healthResponse.json()
   assert.equal(healthPayload.ok, true, '/health must return {"ok": true}.')
+  const service = healthPayload.service
+  if (service !== undefined) {
+    assert.equal(typeof service, 'string', '/health service must be a string when present.')
+    assert(service.length > 0, '/health service must not be empty when present.')
+    assert.equal(healthResponse.headers.get('x-codersmu-service'), service, 'The health service header must match the payload when present.')
+  }
+
+  const version = healthPayload.version
+  if (version !== undefined) {
+    assert.equal(typeof version, 'string', '/health version must be a string when present.')
+    assert(version.length > 0, '/health version must not be empty when present.')
+    assert.equal(healthResponse.headers.get('x-codersmu-version'), version, 'The health version header must match the payload when present.')
+  }
 
   const headResponse = await fetchResponse(baseUrl, '/health', {
     method: 'HEAD',
   })
   assert.equal(headResponse.status, 200, 'HEAD /health must return 200.')
+
+  const releaseSha = healthPayload.releaseSha
+  if (releaseSha !== undefined) {
+    assert.equal(typeof releaseSha, 'string', '/health releaseSha must be a string when present.')
+    assert(releaseSha.length > 0, '/health releaseSha must not be empty when present.')
+    assert.equal(headResponse.headers.get('x-codersmu-release-sha'), releaseSha, 'The release-sha header must match the health payload when present.')
+  }
+
+  return {
+    service,
+    version,
+    releaseSha,
+  }
 }
 
 async function checkListAndDetail(baseUrl) {
@@ -148,16 +178,22 @@ async function checkUpcomingAndNext(baseUrl, allMeetupIds) {
 async function main() {
   const baseUrl = readBaseUrl()
 
-  await checkHealth(baseUrl)
+  const healthSummary = await checkHealth(baseUrl)
   const { allMeetups, allMeetupIds } = await checkListAndDetail(baseUrl)
   const nextSummary = await checkUpcomingAndNext(baseUrl, allMeetupIds)
 
   const nextLabel = nextSummary.hasNextMeetup
     ? `next=${nextSummary.nextMeetupId}`
     : 'next=none'
+  const releaseLabel = healthSummary.releaseSha
+    ? `release=${healthSummary.releaseSha}`
+    : healthSummary.version
+      ? `version=${healthSummary.version}`
+      : 'version=unknown'
+  const serviceLabel = healthSummary.service ?? 'service=unknown'
 
   console.log(
-    `Hosted API is healthy at ${baseUrl} (${allMeetups.length} meetups, ${nextSummary.upcomingCount} upcoming, ${nextLabel})`,
+    `Hosted API is healthy at ${baseUrl} (${serviceLabel}, ${releaseLabel}, ${allMeetups.length} meetups, ${nextSummary.upcomingCount} upcoming, ${nextLabel})`,
   )
 }
 

@@ -38,6 +38,7 @@ vi.mock('@codersmu/core', async (importOriginal) => {
 afterEach(() => {
   delete process.env.CODERSMU_UPSTREAM_API_BASE_URL
   delete process.env.CODERSMU_API_LOG_LEVEL
+  delete process.env.CODERSMU_RELEASE_SHA
   vi.clearAllMocks()
   vi.resetModules()
 })
@@ -48,6 +49,26 @@ function resetFetchFrontendMuMeetupsMock() {
 }
 
 describe('handleRequest', () => {
+  it('includes service and version metadata in health responses and headers', async () => {
+    process.env.CODERSMU_RELEASE_SHA = 'abc123def'
+    resetFetchFrontendMuMeetupsMock()
+    const { handleRequest } = await import('../src/server')
+
+    const response = await handleRequest(new Request('http://localhost/health'))
+    const payload = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(payload).toEqual({
+      ok: true,
+      service: 'codersmu-api',
+      version: '0.0.0-prototype.1',
+      releaseSha: 'abc123def',
+    })
+    expect(response.headers.get('x-codersmu-service')).toBe('codersmu-api')
+    expect(response.headers.get('x-codersmu-version')).toBe('0.0.0-prototype.1')
+    expect(response.headers.get('x-codersmu-release-sha')).toBe('abc123def')
+  })
+
   it('logs successful requests and provider refreshes in structured JSON', async () => {
     process.env.CODERSMU_API_LOG_LEVEL = 'info'
     resetFetchFrontendMuMeetupsMock()
@@ -72,6 +93,8 @@ describe('handleRequest', () => {
     }))
 
     expect(response.status).toBe(200)
+    expect(response.headers.get('x-codersmu-service')).toBe('codersmu-api')
+    expect(response.headers.get('x-codersmu-version')).toBe('0.0.0-prototype.1')
   })
 
   it('uses the explicit upstream API base URL for producer fetches', async () => {

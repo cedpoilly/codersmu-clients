@@ -1,9 +1,14 @@
 import { createServer } from 'node:http'
+import { createRequire } from 'node:module'
 
 import { logEvent } from './logger'
 import { handleMeetupBySlugRequest } from './routes/meetup-by-slug'
 import { handleMeetupListRequest } from './routes/meetups'
 import { handleNextMeetupRequest } from './routes/next-meetup'
+
+const require = createRequire(import.meta.url)
+const { version: API_VERSION } = require('../package.json') as { version: string }
+const SERVICE_NAME = 'codersmu-api'
 
 function normalizePathname(pathname: string): string {
   if (pathname === '/') {
@@ -13,11 +18,39 @@ function normalizePathname(pathname: string): string {
   return pathname.replace(/\/+$/, '')
 }
 
+function resolveReleaseSha(): string | undefined {
+  const value = process.env.CODERSMU_RELEASE_SHA?.trim()
+  return value ? value : undefined
+}
+
+function buildHealthPayload() {
+  const releaseSha = resolveReleaseSha()
+
+  return {
+    ok: true,
+    service: SERVICE_NAME,
+    version: API_VERSION,
+    ...(releaseSha ? { releaseSha } : {}),
+  }
+}
+
+function applyResponseMetadata(response: Response): Response {
+  response.headers.set('x-codersmu-service', SERVICE_NAME)
+  response.headers.set('x-codersmu-version', API_VERSION)
+
+  const releaseSha = resolveReleaseSha()
+  if (releaseSha) {
+    response.headers.set('x-codersmu-release-sha', releaseSha)
+  }
+
+  return response
+}
+
 export async function handleRequest(request: Request): Promise<Response> {
   const startedAt = Date.now()
 
   if (request.method !== 'GET' && request.method !== 'HEAD') {
-    const response = Response.json({ error: 'Method not allowed.' }, { status: 405 })
+    const response = applyResponseMetadata(Response.json({ error: 'Method not allowed.' }, { status: 405 }))
     const url = new URL(request.url)
     logEvent('warn', 'request_completed', {
       method: request.method,
@@ -34,27 +67,27 @@ export async function handleRequest(request: Request): Promise<Response> {
 
   try {
     if (pathname === '/health') {
-      response = Response.json({ ok: true })
+      response = applyResponseMetadata(Response.json(buildHealthPayload()))
       return response
     }
 
     if (pathname === '/meetups') {
-      response = await handleMeetupListRequest(request)
+      response = applyResponseMetadata(await handleMeetupListRequest(request))
       return response
     }
 
     if (pathname === '/meetups/next') {
-      response = await handleNextMeetupRequest()
+      response = applyResponseMetadata(await handleNextMeetupRequest())
       return response
     }
 
     if (pathname.startsWith('/meetups/')) {
       const slug = decodeURIComponent(pathname.slice('/meetups/'.length))
-      response = await handleMeetupBySlugRequest(slug)
+      response = applyResponseMetadata(await handleMeetupBySlugRequest(slug))
       return response
     }
 
-    response = Response.json({ error: 'Not found.' }, { status: 404 })
+    response = applyResponseMetadata(Response.json({ error: 'Not found.' }, { status: 404 }))
     return response
   }
   catch (error) {
@@ -66,7 +99,7 @@ export async function handleRequest(request: Request): Promise<Response> {
     })
 
     const message = error instanceof Error ? error.message : 'Unexpected server error.'
-    response = Response.json({ error: message }, { status: 500 })
+    response = applyResponseMetadata(Response.json({ error: message }, { status: 500 }))
     return response
   }
   finally {

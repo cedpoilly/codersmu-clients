@@ -8,6 +8,7 @@ Operational notes for the deployed Coders.mu hosted API.
 - Health endpoint: `https://codersmu.lepopquiz.app/health`
 - Coolify app: `codersmu-api`
 - Default upstream API: `https://coders.mu/api/public/v1`
+- Optional release env: `CODERSMU_RELEASE_SHA`
 
 ## Verify
 
@@ -33,7 +34,7 @@ Treat that workflow as an uptime probe for the live deployment, not proof that t
 Expected health response:
 
 ```json
-{"ok":true}
+{"ok":true,"service":"codersmu-api","version":"0.0.0-prototype.1"}
 ```
 
 ## Deploy
@@ -43,6 +44,8 @@ Expected health response:
 3. Wait for the deployment to finish.
 4. Run the verify steps above.
 5. If you want a GitHub-side confirmation too, run the `Hosted API` workflow manually after deployment finishes.
+
+If `CODERSMU_RELEASE_SHA` is set in the runtime environment, `/health` and the `x-codersmu-release-sha` header expose the live deployed revision directly.
 
 If the health check passes but the UI still shows stale state in Coolify, trust the public health check over a stale page badge.
 
@@ -90,12 +93,14 @@ Primary runtime variables:
 - `PORT`
 - `CODERSMU_UPSTREAM_API_BASE_URL`
 - `CODERSMU_API_LOG_LEVEL`
+- `CODERSMU_RELEASE_SHA`
 
 Suggested production values:
 
 - `PORT=8787`
 - `CODERSMU_UPSTREAM_API_BASE_URL=https://coders.mu/api/public/v1`
 - `CODERSMU_API_LOG_LEVEL=info`
+- `CODERSMU_RELEASE_SHA=<git-sha>`
 
 ## First Triage
 
