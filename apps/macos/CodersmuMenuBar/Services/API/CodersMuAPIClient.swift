@@ -1,6 +1,9 @@
 import Foundation
 
 struct CodersMuAPIClient {
+  private static let defaultHostedAPIBaseURLString = "https://codersmu.lepopquiz.app"
+  private static let defaultRequestTimeout: TimeInterval = 10
+  private static let hostedRequestTimeout: TimeInterval = 3
   private let session: URLSession
   private let hostedAPIBaseURL: URL?
   private let meetupsURL = URL(string: "https://coders.mu/meetups/")!
@@ -57,7 +60,12 @@ struct CodersMuAPIClient {
     let url = baseURL
       .appendingPathComponent("meetups")
       .appendingPathComponent("next")
-    let payload = try await fetchJSON(HostedNextMeetupResponseDTO.self, from: url, accept: "application/json")
+    let payload = try await fetchJSON(
+      HostedNextMeetupResponseDTO.self,
+      from: url,
+      accept: "application/json",
+      timeoutInterval: Self.hostedRequestTimeout
+    )
     return NextMeetupResponseDTO(meetup: try payload.meetup?.toContract())
   }
 
@@ -81,14 +89,23 @@ struct CodersMuAPIClient {
     return payload.props.meetup
   }
 
-  private func fetchJSON<T: Decodable>(_ type: T.Type, from url: URL, accept: String) async throws -> T {
-    let data = try await fetchData(from: url, accept: accept)
+  private func fetchJSON<T: Decodable>(
+    _ type: T.Type,
+    from url: URL,
+    accept: String,
+    timeoutInterval: TimeInterval = Self.defaultRequestTimeout
+  ) async throws -> T {
+    let data = try await fetchData(from: url, accept: accept, timeoutInterval: timeoutInterval)
     let decoder = JSONDecoder()
     return try decoder.decode(type, from: data)
   }
 
   private func fetchHTML(from url: URL) async throws -> String {
-    let data = try await fetchData(from: url, accept: "text/html,application/xhtml+xml")
+    let data = try await fetchData(
+      from: url,
+      accept: "text/html,application/xhtml+xml",
+      timeoutInterval: Self.defaultRequestTimeout
+    )
 
     guard let html = String(data: data, encoding: .utf8) else {
       throw APIError.invalidPayload("Coders.mu did not return UTF-8 HTML.")
@@ -97,9 +114,9 @@ struct CodersMuAPIClient {
     return html
   }
 
-  private func fetchData(from url: URL, accept: String) async throws -> Data {
+  private func fetchData(from url: URL, accept: String, timeoutInterval: TimeInterval) async throws -> Data {
     var request = URLRequest(url: url)
-    request.timeoutInterval = 10
+    request.timeoutInterval = timeoutInterval
     request.setValue("codersmu-macos/0.1.0 (+https://coders.mu)", forHTTPHeaderField: "User-Agent")
     request.setValue(accept, forHTTPHeaderField: "Accept")
 
@@ -135,10 +152,13 @@ struct CodersMuAPIClient {
 
 extension CodersMuAPIClient {
   private static var defaultHostedAPIBaseURL: URL? {
-    guard let value = ProcessInfo.processInfo.environment["CODERSMU_HOSTED_API_BASE_URL"]?.trimmingCharacters(in: .whitespacesAndNewlines), !value.isEmpty else {
-      return nil
+    let value = ProcessInfo.processInfo.environment["CODERSMU_HOSTED_API_BASE_URL"]?
+      .trimmingCharacters(in: .whitespacesAndNewlines)
+
+    if let value, !value.isEmpty {
+      return URL(string: value)
     }
 
-    return URL(string: value)
+    return URL(string: defaultHostedAPIBaseURLString)
   }
 }

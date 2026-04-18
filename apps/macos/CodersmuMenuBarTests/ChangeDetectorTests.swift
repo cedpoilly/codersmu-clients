@@ -193,7 +193,7 @@ final class CodersMuAPIClientTests: XCTestCase {
     let configuration = URLSessionConfiguration.ephemeral
     configuration.protocolClasses = [MockURLProtocol.self]
     let session = URLSession(configuration: configuration)
-    let client = CodersMuAPIClient(session: session)
+    let client = CodersMuAPIClient(session: session, hostedAPIBaseURL: nil)
 
     let response = try await client.fetchNextMeetupResponse()
 
@@ -201,7 +201,7 @@ final class CodersMuAPIClientTests: XCTestCase {
     XCTAssertEqual(response.meetup?.status, .scheduled)
   }
 
-  func testFetchNextMeetupResponseUsesHostedEndpointWhenConfigured() async throws {
+  func testFetchNextMeetupResponseUsesHostedEndpointByDefault() async throws {
     let hostedJSON = try makeJSONString([
       "meetup": [
         "id": "hosted-meetup",
@@ -223,7 +223,7 @@ final class CodersMuAPIClientTests: XCTestCase {
     ])
 
     MockURLProtocol.requestHandler = { request in
-      guard request.url?.absoluteString == "https://api.coders.mu/meetups/next" else {
+      guard request.url?.absoluteString == "https://codersmu.lepopquiz.app/meetups/next" else {
         throw URLError(.badURL)
       }
 
@@ -239,10 +239,7 @@ final class CodersMuAPIClientTests: XCTestCase {
     let configuration = URLSessionConfiguration.ephemeral
     configuration.protocolClasses = [MockURLProtocol.self]
     let session = URLSession(configuration: configuration)
-    let client = CodersMuAPIClient(
-      session: session,
-      hostedAPIBaseURL: URL(string: "https://api.coders.mu")
-    )
+    let client = CodersMuAPIClient(session: session)
 
     let response = try await client.fetchNextMeetupResponse()
 
