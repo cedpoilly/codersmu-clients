@@ -92,6 +92,29 @@ final class RefreshCoordinatorTests: XCTestCase {
     XCTAssertNil(snapshot.endsAt)
   }
 
+  func testCliMeetupSnapshotRollsOvernightEndTimeIntoNextDay() throws {
+    let data = Data("""
+    {
+      "id": "overnight-meetup",
+      "title": "Overnight Meetup",
+      "description": null,
+      "date": "2099-04-18",
+      "startTime": "08:00",
+      "endTime": "07:00",
+      "venue": "The Venue",
+      "location": "Moka",
+      "acceptingRsvp": 0,
+      "status": "published"
+    }
+    """.utf8)
+
+    let meetup = try JSONDecoder().decode(CliMeetup.self, from: data)
+    let snapshot = meetup.snapshot(lastSyncedAt: Date(timeIntervalSince1970: 1_800_000_000))
+
+    XCTAssertEqual(snapshot.startsAt, ISO8601DateFormatter().date(from: "2099-04-18T04:00:00Z"))
+    XCTAssertEqual(snapshot.endsAt, ISO8601DateFormatter().date(from: "2099-04-19T03:00:00Z"))
+  }
+
   func testSimulateNewMeetupDoesNotRequireALiveBaseline() async {
     let defaults = UserDefaults(suiteName: "RefreshCoordinatorTests-\(UUID().uuidString)")!
 

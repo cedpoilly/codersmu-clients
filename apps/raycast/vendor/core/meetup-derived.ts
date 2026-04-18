@@ -122,8 +122,8 @@ function buildEndUtcIso(date: string, startTime: string, endTime?: string | null
   }
 
   let endMinutes = toMinutes(normalizeTime(endTime))
-  while (endMinutes <= startMinutes) {
-    endMinutes += 12 * 60
+  if (endMinutes <= startMinutes) {
+    endMinutes += 24 * 60
   }
 
   const normalizedHours = Math.floor(endMinutes / 60) % 24

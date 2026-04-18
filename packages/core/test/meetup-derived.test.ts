@@ -47,6 +47,17 @@ describe('meetup-derived schedule helpers', () => {
     expect(getMeetupEndsAt(missingEndTime)).toBe('2099-04-18T10:00:00.000Z')
   })
 
+  it('rolls overnight end times into the next day with a 24 hour shift', () => {
+    const overnightMeetup: Meetup = {
+      ...baseMeetup,
+      startTime: '08:00',
+      endTime: '07:00',
+    }
+
+    expect(getMeetupStartsAt(overnightMeetup)).toBe('2099-04-18T04:00:00.000Z')
+    expect(getMeetupEndsAt(overnightMeetup)).toBe('2099-04-19T03:00:00.000Z')
+  })
+
   it('marks date-only meetups as completed once their Mauritius date has passed', () => {
     vi.useFakeTimers()
     vi.setSystemTime(new Date('2099-04-19T08:00:00.000Z'))

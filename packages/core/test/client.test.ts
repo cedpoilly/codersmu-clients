@@ -176,4 +176,57 @@ describe('resolveDefaultMeetupProvider', () => {
 
     await expect(provider.listMeetups()).resolves.toEqual(sampleCache.meetups)
   })
+
+  it('uses the shared upcoming selector for list filtering', async () => {
+    const dateTbaMeetup: MeetupCache['meetups'][number] = {
+      id: 'date-tba',
+      title: 'Date TBA Meetup',
+      description: 'Published without a start time yet.',
+      date: '2099-04-17',
+      startTime: null,
+      endTime: null,
+      venue: 'TBA',
+      location: 'Mauritius',
+      status: 'published',
+      photos: [],
+      sessions: [],
+      sponsors: [],
+      acceptingRsvp: 0,
+      seatsAvailable: null,
+    }
+    const canceledMeetup: MeetupCache['meetups'][number] = {
+      id: 'canceled-meetup',
+      title: 'Canceled Meetup',
+      description: 'Should not remain in the upcoming list.',
+      date: '2099-04-18',
+      startTime: '10:00',
+      endTime: '14:00',
+      venue: 'Test Venue',
+      location: 'Moka',
+      status: 'canceled',
+      photos: [],
+      sessions: [],
+      sponsors: [],
+      acceptingRsvp: 0,
+      seatsAvailable: null,
+    }
+    const scheduledMeetup: MeetupCache['meetups'][number] = {
+      ...sampleCache.meetups[0],
+      id: 'scheduled-meetup',
+      title: 'Scheduled Meetup',
+    }
+
+    const { client } = await loadClientModule({
+      cached: {
+        ...sampleCache,
+        meetups: [canceledMeetup, scheduledMeetup, dateTbaMeetup],
+      },
+      isFresh: true,
+    })
+
+    await expect(client.fetchMeetupList('upcoming')).resolves.toMatchObject([
+      { id: 'date-tba' },
+      { id: 'scheduled-meetup' },
+    ])
+  })
 })

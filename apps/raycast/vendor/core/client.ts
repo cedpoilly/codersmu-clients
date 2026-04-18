@@ -1,6 +1,5 @@
 import { isMeetupCacheFresh, readMeetupCache, writeMeetupCache } from './cache'
-import { getMeetupEndsAt } from './meetup-derived'
-import { getMeetup, getPastMeetups, getUpcomingMeetups, sortMeetupsAscending } from './meetups'
+import { getMeetup, getPastMeetups, getUpcomingMeetups } from './meetups'
 import { CacheMeetupProvider } from './providers/cache-provider'
 import { fetchFrontendMuMeetups } from './providers/frontendmu-api'
 import { scrapeCodersMuMeetups } from './providers/codersmu-scraper'
@@ -88,10 +87,5 @@ export async function getMeetupsForList(provider: MeetupProvider, state: MeetupL
     ]
   }
 
-  const now = Date.now()
-  return sortMeetupsAscending(await provider.listMeetups())
-    .filter((meetup) => {
-      const endsAt = getMeetupEndsAt(meetup)
-      return Boolean(endsAt && Date.parse(endsAt) >= now)
-    })
+  return getUpcomingMeetups(provider)
 }

@@ -158,7 +158,14 @@ function normalizeMeetup(rawMeetup: RawMeetup): Meetup {
 
 export async function fetchFrontendMuMeetups(): Promise<MeetupCache> {
   const meetups = await fetchMeetupIndex()
-  const details = await mapConcurrent(meetups, 4, async (meetup) => fetchMeetupDetail(meetup.id))
+  const details = await mapConcurrent(meetups, 4, async (meetup) => {
+    try {
+      return await fetchMeetupDetail(meetup.id)
+    }
+    catch {
+      return meetup
+    }
+  })
 
   return {
     source: MEETUPS_API_URL,

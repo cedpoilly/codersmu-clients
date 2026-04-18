@@ -307,8 +307,8 @@ private func buildEndDate(date: String, startTime: String, endTime: String) -> D
 
   let startMinutes = startTime.normalizedTime.totalMinutes
   var endMinutes = endTime.normalizedTime.totalMinutes
-  while endMinutes <= startMinutes {
-    endMinutes += 12 * 60
+  if endMinutes <= startMinutes {
+    endMinutes += 24 * 60
   }
 
   return Calendar.current.date(byAdding: .minute, value: endMinutes - startMinutes, to: startDate)

@@ -94,6 +94,50 @@ describe('fetchFrontendMuMeetups', () => {
     expect(cache.meetups[0]?.id).toBe('future-meetup')
   })
 
+  it('keeps usable index meetups when one detail endpoint fails', async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify([
+        {
+          id: 'future-meetup',
+          title: 'The Detailed Meetup',
+          date: '2099-04-18',
+          status: 'published',
+        },
+        {
+          id: 'broken-meetup',
+          title: 'The Broken Meetup',
+          date: '2099-04-25',
+          status: 'published',
+        },
+      ]), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({
+        id: 'future-meetup',
+        title: 'The Detailed Meetup',
+        description: 'Full details',
+        date: '2099-04-18',
+        startTime: '10:00',
+        status: 'published',
+      }), { status: 200 }))
+      .mockResolvedValueOnce(new Response('missing', { status: 404, statusText: 'Not Found' }))
+
+    vi.stubGlobal('fetch', fetchMock)
+
+    const cache = await fetchFrontendMuMeetups()
+
+    expect(cache.meetups).toHaveLength(2)
+    expect(cache.meetups[0]).toMatchObject({
+      id: 'future-meetup',
+      description: 'Full details',
+      startTime: '10:00',
+    })
+    expect(cache.meetups[1]).toMatchObject({
+      id: 'broken-meetup',
+      title: 'The Broken Meetup',
+      date: '2099-04-25',
+      status: 'published',
+    })
+  })
+
   it('turns fetch timeouts into a bounded error', async () => {
     const timeoutError = new Error('timed out')
     timeoutError.name = 'TimeoutError'

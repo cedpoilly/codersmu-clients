@@ -19,6 +19,7 @@ import {
   getMeetupSummary,
   getMeetupTimezone,
   getMeetupsForList,
+  isPastMeetup,
   refreshDefaultMeetupCache,
   resolveDefaultMeetupProvider,
   sortMeetupsAscending,
@@ -318,7 +319,7 @@ function parseLimit(value?: string): number | undefined {
 async function handleCacheRefresh(options: CliOptions): Promise<void> {
   const { cache, cacheFile } = await refreshDefaultMeetupCache()
   const nextMeetup = sortMeetupsAscending(cache.meetups)
-    .find((meetup) => getMeetupLifecycleStatus(meetup) !== 'completed')
+    .find((meetup) => !isPastMeetup(meetup))
 
   const payload = {
     scrapedAt: cache.scrapedAt,
