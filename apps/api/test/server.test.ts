@@ -47,6 +47,17 @@ function resetFetchFrontendMuMeetupsMock() {
 }
 
 describe('handleRequest', () => {
+  it('treats HEAD health checks like GET', async () => {
+    resetFetchFrontendMuMeetupsMock()
+    const { handleRequest } = await import('../src/server')
+
+    const response = await handleRequest(new Request('http://localhost/health', {
+      method: 'HEAD',
+    }))
+
+    expect(response.status).toBe(200)
+  })
+
   it('uses the explicit upstream API base URL for producer fetches', async () => {
     process.env.CODERSMU_UPSTREAM_API_BASE_URL = 'https://frontendmu.example/api/public/v1/'
     resetFetchFrontendMuMeetupsMock()
@@ -154,5 +165,20 @@ describe('handleRequest', () => {
     })
 
     vi.useRealTimers()
+  })
+
+  it('still rejects unsupported methods', async () => {
+    resetFetchFrontendMuMeetupsMock()
+    const { handleRequest } = await import('../src/server')
+
+    const response = await handleRequest(new Request('http://localhost/health', {
+      method: 'POST',
+    }))
+    const payload = await response.json()
+
+    expect(response.status).toBe(405)
+    expect(payload).toEqual({
+      error: 'Method not allowed.',
+    })
   })
 })

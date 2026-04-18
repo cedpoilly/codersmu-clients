@@ -13,7 +13,7 @@ function normalizePathname(pathname: string): string {
 }
 
 export async function handleRequest(request: Request): Promise<Response> {
-  if (request.method !== 'GET') {
+  if (request.method !== 'GET' && request.method !== 'HEAD') {
     return Response.json({ error: 'Method not allowed.' }, { status: 405 })
   }
 
@@ -77,6 +77,11 @@ async function startServer() {
     response.headers.forEach((value, key) => {
       res.setHeader(key, value)
     })
+
+    if (req.method === 'HEAD') {
+      res.end()
+      return
+    }
 
     const body = response.body ? Buffer.from(await response.arrayBuffer()) : null
     res.end(body ?? undefined)
