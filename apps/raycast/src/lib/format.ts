@@ -105,13 +105,13 @@ export function getMeetupAudienceLabel(meetup: Meetup): string | undefined {
 }
 
 export function getMeetupSpeakerNames(meetup: Meetup): string[] {
-  if (meetup.sessions.length) {
-    return meetup.sessions.flatMap((session) =>
-      session.speakers.map((speaker) => speaker.name),
-    );
-  }
+  const names = meetup.sessions.length
+    ? meetup.sessions.flatMap((session) =>
+        session.speakers.map((speaker) => speaker.name),
+      )
+    : meetup.speakers.map((speaker) => speaker.name);
 
-  return meetup.speakers.map((speaker) => speaker.name);
+  return [...new Set(names)];
 }
 
 export function getMeetupTagNames(meetup: Meetup): string[] {
@@ -137,11 +137,7 @@ export function renderMeetupMarkdown(meetup: Meetup): string {
   const lines: string[] = [
     `# ${meetup.title}`,
     "",
-    `**${getMeetupStatusLabel(meetup)}**`,
-    "",
-    formatMeetupRange(meetup),
-    "",
-    formatMeetupLocation(meetup),
+    `**${getMeetupStatusLabel(meetup)}** · ${formatMeetupDay(meetup.startsAt, meetup.timezone)}`,
     "",
     meetup.summary,
     "",

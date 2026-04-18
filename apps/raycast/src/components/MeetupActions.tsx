@@ -1,4 +1,4 @@
-import { Action, ActionPanel, Clipboard, Icon } from "@raycast/api";
+import { Action, ActionPanel, Icon, Keyboard } from "@raycast/api";
 import type { ReactNode } from "react";
 
 import { buildCalendarUrls, buildIcs, type Meetup } from "../lib/core";
@@ -57,11 +57,13 @@ export function MeetupActions({
           title="Add to Google Calendar"
           url={calendar.google}
           icon={Icon.Calendar}
+          shortcut={{ modifiers: ["cmd", "shift"], key: "g" }}
         />
         <Action.OpenInBrowser
           title="Add to Outlook Calendar"
           url={calendar.outlook}
           icon={Icon.Calendar}
+          shortcut={{ modifiers: ["cmd", "shift"], key: "o" }}
         />
       </ActionPanel.Section>
       <ActionPanel.Section title="Copy">
@@ -99,13 +101,7 @@ export function MeetupActions({
           content={calendar.outlook}
         />
         <Action.CopyToClipboard title="Copy ICS" content={buildIcs(meetup)} />
-        <Action
-          title="Copy Summary"
-          icon={Icon.Clipboard}
-          onAction={async () => {
-            await Clipboard.copy(meetup.summary);
-          }}
-        />
+        <Action.CopyToClipboard title="Copy Summary" content={meetup.summary} />
       </ActionPanel.Section>
       {onRefresh ? (
         <ActionPanel.Section title="Data">
@@ -113,6 +109,7 @@ export function MeetupActions({
             title="Refresh"
             onAction={onRefresh}
             icon={Icon.ArrowClockwise}
+            shortcut={Keyboard.Shortcut.Common.Refresh}
           />
         </ActionPanel.Section>
       ) : null}
