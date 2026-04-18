@@ -163,6 +163,8 @@ GitHub Actions already exist for CI and a future npm release path, but npm publi
 
 The shared core still uses the public `coders.mu` API at `https://coders.mu/api/public/v1/meetups` as its default source, but the shipped CLI, macOS app, and Raycast extension now opt themselves into the deployed hosted edge at `https://codersmu.lepopquiz.app`. The hosted service itself reads from the same upstream JSON contract, and `CODERSMU_HOSTED_API_BASE_URL` remains available as an explicit override if you need to point a client elsewhere.
 
+For hosted API operations, see [apps/api/RUNBOOK.md](/Users/cedricpoilly/code/codersmu-clients/apps/api/RUNBOOK.md).
+
 To smoke-test the live hosted deployment from this repo:
 
 ```bash

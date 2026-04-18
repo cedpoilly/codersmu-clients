@@ -41,3 +41,5 @@ The main event names to watch during incidents are:
 - `provider_refresh_succeeded`
 - `provider_refresh_failed`
 - `provider_stale_cache_reused`
+
+For deploy, verify, rollback, and first-triage steps, see [RUNBOOK.md](/Users/cedricpoilly/code/codersmu-clients/apps/api/RUNBOOK.md).
