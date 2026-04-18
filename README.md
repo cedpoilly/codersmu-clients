@@ -169,4 +169,12 @@ To smoke-test the live hosted deployment from this repo:
 npm run check:hosted-api
 ```
 
-Set `CODERSMU_HOSTED_API_BASE_URL` first if you want to check a different deployment target.
+That probe now validates:
+- `GET /health`
+- `HEAD /health`
+- `GET /meetups?state=all`
+- `GET /meetups?state=upcoming`
+- `GET /meetups/next`
+- detail lookup by both derived slug and raw meetup id
+
+Set `CODERSMU_HOSTED_API_BASE_URL` first if you want to check a different deployment target. Use `CODERSMU_HOSTED_API_TIMEOUT_SECONDS` to tighten or relax the live probe timeout.
