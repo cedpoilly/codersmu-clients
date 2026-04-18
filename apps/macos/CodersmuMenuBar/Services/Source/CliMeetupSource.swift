@@ -151,20 +151,10 @@ struct CliMeetup: Decodable {
   let endTime: String?
   let venue: String?
   let location: String?
-  let attendeeCount: Int?
   let acceptingRsvp: FlexibleBool?
   let status: String
-  let album: String?
-  let updatedAt: String?
-  let coverImageUrl: String?
-  let photos: [Photo]?
-  let sessions: [Session]?
-  let sponsors: [Sponsor]?
   let seatsAvailable: Int?
-  let rsvpClosingDate: String?
   let rsvpLink: String?
-  let mapUrl: String?
-  let parkingLocation: String?
 
   func snapshot(lastSyncedAt: Date) -> MeetupSnapshot {
     let derivedSlug = slug?.trimmedNilIfEmpty ?? derivedSlugFromDateAndTitle
@@ -241,34 +231,6 @@ struct CliMeetup: Decodable {
     }
   }
 }
-
-struct Session: Decodable {
-  let id: String
-  let title: String
-  let description: String?
-  let order: Int?
-  let speakers: [Speaker]
-}
-
-struct Speaker: Decodable {
-  let id: String
-  let name: String
-  let githubUsername: String?
-  let avatarUrl: String?
-  let featured: Int?
-}
-
-struct Sponsor: Decodable {
-  let id: String
-  let name: String
-  let website: String?
-  let logoUrl: String?
-  let sponsorTypes: [String]
-  let logoBg: String?
-  let status: String?
-}
-
-struct Photo: Decodable {}
 
 struct FlexibleBool: Decodable {
   let boolValue: Bool
@@ -353,21 +315,6 @@ private extension String {
       .lowercased()
       .replacingOccurrences(of: "[\\s_-]+", with: "-", options: .regularExpression)
       .replacingOccurrences(of: "^-+|-+$", with: "", options: .regularExpression)
-  }
-}
-
-private extension CliMeetup {
-  private func parsedDate(_ value: String) -> Date? {
-    let formatterWithFractionalSeconds = ISO8601DateFormatter()
-    formatterWithFractionalSeconds.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-
-    if let date = formatterWithFractionalSeconds.date(from: value) {
-      return date
-    }
-
-    let formatter = ISO8601DateFormatter()
-    formatter.formatOptions = [.withInternetDateTime]
-    return formatter.date(from: value)
   }
 }
 

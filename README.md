@@ -81,6 +81,11 @@ Use `--short` or `-s` for a more compact human-readable listing.
 Use `--refresh` on read commands to bypass the local cache for that invocation.
 Use `ls` and `show` as short aliases for `list` and `view`.
 
+Breaking changes:
+- `codersmu list --json` now returns a bare JSON array of meetups instead of `{ "meetups": [...] }`.
+- `codersmu view <slug> --json` now returns the bare meetup object instead of `{ "meetup": {...} }`.
+- `codersmu view next --json` now exits with the same not-found behavior as the human-readable command when there is no upcoming meetup, instead of returning `{ "meetup": null }`.
+
 ## Raycast
 
 The Raycast extension currently uses the same shared API-backed core layer as the CLI.

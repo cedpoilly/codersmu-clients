@@ -110,6 +110,10 @@ async function mapConcurrent<Input, Output>(
 }
 
 function normalizeMeetup(rawMeetup: RawMeetup): Meetup {
+  const normalizedStatus = rawMeetup.status?.trim().toLowerCase() === 'cancelled'
+    ? 'canceled'
+    : rawMeetup.status
+
   return {
     id: rawMeetup.id,
     title: rawMeetup.title,
@@ -121,7 +125,7 @@ function normalizeMeetup(rawMeetup: RawMeetup): Meetup {
     location: rawMeetup.location ?? null,
     attendeeCount: rawMeetup.attendeeCount,
     acceptingRsvp: rawMeetup.acceptingRsvp,
-    status: rawMeetup.status,
+    status: normalizedStatus,
     album: rawMeetup.album ?? null,
     updatedAt: rawMeetup.updatedAt ?? null,
     coverImageUrl: rawMeetup.coverImageUrl ?? null,

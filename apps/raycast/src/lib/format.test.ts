@@ -19,7 +19,6 @@ import {
   meetupHasCalendarSchedule,
   getMeetupStatusColor,
   getMeetupStatusIcon,
-  getMeetupTagNames,
   meetupKeywords,
   renderMeetupMarkdown,
 } from "./format";
@@ -132,7 +131,6 @@ describe("Raycast meetup formatting", () => {
         "Shipping Better Clients",
       ]),
     );
-    expect(getMeetupTagNames(baseMeetup)).toEqual([]);
     expect(getMeetupStatusColor(baseMeetup)).toBe("blue");
     expect(getMeetupStatusIcon(baseMeetup)).toEqual({
       source: "circle",

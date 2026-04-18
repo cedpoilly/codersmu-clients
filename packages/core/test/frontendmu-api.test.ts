@@ -94,6 +94,31 @@ describe('fetchFrontendMuMeetups', () => {
     expect(cache.meetups[0]?.id).toBe('future-meetup')
   })
 
+  it('normalizes cancelled statuses to canceled', async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify([
+        {
+          id: 'canceled-meetup',
+          title: 'Canceled Meetup',
+          date: '2099-04-18',
+          status: 'cancelled',
+        },
+      ]), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({
+        id: 'canceled-meetup',
+        title: 'Canceled Meetup',
+        description: null,
+        date: '2099-04-18',
+        status: 'cancelled',
+      }), { status: 200 }))
+
+    vi.stubGlobal('fetch', fetchMock)
+
+    const cache = await fetchFrontendMuMeetups()
+
+    expect(cache.meetups[0]?.status).toBe('canceled')
+  })
+
   it('keeps usable index meetups when one detail endpoint fails', async () => {
     const fetchMock = vi.fn()
       .mockResolvedValueOnce(new Response(JSON.stringify([

@@ -143,11 +143,6 @@ export function getMeetupSpeakerNames(meetup: Meetup): string[] {
   return getCoreMeetupSpeakerNames(meetup);
 }
 
-export function getMeetupTagNames(meetup: Meetup): string[] {
-  void meetup;
-  return [];
-}
-
 export function meetupKeywords(meetup: Meetup): string[] {
   const location = getMeetupLocationParts(meetup);
   return [

@@ -20,6 +20,11 @@ describe('getCacheTtlMs', () => {
     expect(ttl).toBe(6 * 60 * 60 * 1000)
   })
 
+  it('anchors the default business-hours window to Mauritius time', () => {
+    expect(getCacheTtlMs(new Date('2026-04-20T23:00:00Z'))).toBe(6 * 60 * 60 * 1000)
+    expect(getCacheTtlMs(new Date('2026-04-20T05:00:00Z'))).toBe(60 * 60 * 1000)
+  })
+
   it('honors an explicit cache ttl override', () => {
     process.env.CODERSMU_CACHE_TTL_MS = '900000'
 

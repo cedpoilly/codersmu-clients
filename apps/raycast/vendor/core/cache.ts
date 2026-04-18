@@ -9,6 +9,7 @@ const DEFAULT_BUSINESS_HOURS_TTL_MS = 60 * 60 * 1000
 const DEFAULT_CACHE_TTL_MS = 6 * 60 * 60 * 1000
 const DEFAULT_BUSINESS_HOURS_START_HOUR = 9
 const DEFAULT_BUSINESS_HOURS_END_HOUR = 18
+const DEFAULT_BUSINESS_HOURS_TIMEZONE = 'Indian/Mauritius'
 
 export function getCacheFilePath(): string {
   return process.env.CODERSMU_CACHE_FILE || DEFAULT_CACHE_FILE
@@ -23,7 +24,7 @@ function parseHour(rawValue: string | undefined, fallback: number): number {
   return Number.isFinite(parsed) && parsed >= 0 && parsed <= 23 ? parsed : fallback
 }
 
-function isWithinBusinessHours(date: Date, calendar = Intl.DateTimeFormat().resolvedOptions().timeZone): boolean {
+function isWithinBusinessHours(date: Date, calendar = DEFAULT_BUSINESS_HOURS_TIMEZONE): boolean {
   const hour = Number.parseInt(new Intl.DateTimeFormat('en-GB', {
     hour: 'numeric',
     hour12: false,
