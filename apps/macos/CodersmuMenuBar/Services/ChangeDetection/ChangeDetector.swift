@@ -11,21 +11,23 @@ struct ChangeDetector {
         MeetupChangeEvent(
           kind: .nextMeetupCreated,
           seatThreshold: nil,
+          dedupeKey: nil,
           summary: "A new upcoming meetup is available: \(current.title).",
           detectedAt: now,
-          meetupSlug: current.slug
+          meetupSlug: current.changeIdentity
         )
       ]
     }
 
-    guard previous.slug == current.slug else {
+    guard previous.changeIdentity == current.changeIdentity else {
       return [
         MeetupChangeEvent(
           kind: .nextMeetupCreated,
           seatThreshold: nil,
+          dedupeKey: nil,
           summary: "A new upcoming meetup replaced the previous one: \(current.title).",
           detectedAt: now,
-          meetupSlug: current.slug
+          meetupSlug: current.changeIdentity
         )
       ]
     }
@@ -37,9 +39,10 @@ struct ChangeDetector {
         MeetupChangeEvent(
           kind: .dateConfirmed,
           seatThreshold: nil,
+          dedupeKey: current.scheduleDedupeKey,
           summary: "The meetup date is now confirmed.",
           detectedAt: now,
-          meetupSlug: current.slug
+          meetupSlug: current.changeIdentity
         )
       )
     } else if previous.startsAt != current.startsAt || previous.endsAt != current.endsAt {
@@ -47,9 +50,10 @@ struct ChangeDetector {
         MeetupChangeEvent(
           kind: .dateChanged,
           seatThreshold: nil,
+          dedupeKey: current.scheduleDedupeKey,
           summary: "The meetup schedule changed.",
           detectedAt: now,
-          meetupSlug: current.slug
+          meetupSlug: current.changeIdentity
         )
       )
     }
@@ -59,9 +63,10 @@ struct ChangeDetector {
         MeetupChangeEvent(
           kind: .locationConfirmed,
           seatThreshold: nil,
+          dedupeKey: current.locationDedupeKey,
           summary: "The meetup location is now confirmed.",
           detectedAt: now,
-          meetupSlug: current.slug
+          meetupSlug: current.changeIdentity
         )
       )
     } else if previous.locationDescription != nil, current.locationDescription != nil, previous.locationDescription != current.locationDescription {
@@ -69,9 +74,10 @@ struct ChangeDetector {
         MeetupChangeEvent(
           kind: .locationChanged,
           seatThreshold: nil,
+          dedupeKey: current.locationDedupeKey,
           summary: "The meetup location changed.",
           detectedAt: now,
-          meetupSlug: current.slug
+          meetupSlug: current.changeIdentity
         )
       )
     }
@@ -81,9 +87,10 @@ struct ChangeDetector {
         MeetupChangeEvent(
           kind: .rsvpOpened,
           seatThreshold: nil,
+          dedupeKey: nil,
           summary: "RSVP is now open for the next meetup.",
           detectedAt: now,
-          meetupSlug: current.slug
+          meetupSlug: current.changeIdentity
         )
       )
     }
@@ -93,9 +100,10 @@ struct ChangeDetector {
         MeetupChangeEvent(
           kind: .seatThresholdReached,
           seatThreshold: seatThreshold,
+          dedupeKey: nil,
           summary: "Only \(seatThreshold) seats are left. RSVP soon.",
           detectedAt: now,
-          meetupSlug: current.slug
+          meetupSlug: current.changeIdentity
         )
       )
     }
@@ -105,9 +113,10 @@ struct ChangeDetector {
         MeetupChangeEvent(
           kind: .meetupCanceledOrPostponed,
           seatThreshold: nil,
+          dedupeKey: current.status.rawValue,
           summary: "The meetup was \(current.status == .postponed ? "postponed" : "canceled").",
           detectedAt: now,
-          meetupSlug: current.slug
+          meetupSlug: current.changeIdentity
         )
       )
     }
@@ -125,5 +134,17 @@ struct ChangeDetector {
     }
 
     return crossed.min()
+  }
+}
+
+private extension MeetupSnapshot {
+  var scheduleDedupeKey: String {
+    let start = startsAt?.ISO8601Format() ?? "nil"
+    let end = endsAt?.ISO8601Format() ?? "nil"
+    return "\(start)|\(end)"
+  }
+
+  var locationDedupeKey: String {
+    locationDescription?.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() ?? "nil"
   }
 }

@@ -4,6 +4,14 @@ import SwiftUI
 struct SettingsView: View {
   @Bindable var appModel: AppModel
 
+  private var showsDeveloperControls: Bool {
+#if DEBUG
+    true
+#else
+    ProcessInfo.processInfo.environment["CODERSMU_DEV_CONTROLS"] == "1"
+#endif
+  }
+
   var body: some View {
     Form {
       Section("Notifications") {
@@ -82,9 +90,45 @@ struct SettingsView: View {
             .foregroundStyle(.secondary)
         }
 
-        Button("Refresh Now") {
+        HStack(spacing: 8) {
+          if appModel.isRefreshing {
+            ProgressView()
+              .controlSize(.small)
+          } else {
+            Image(systemName: appModel.refreshStateIconName)
+              .foregroundStyle(appModel.refreshStateTint)
+          }
+
+          Text(appModel.refreshStatusText)
+            .font(.caption)
+            .foregroundStyle(.secondary)
+        }
+
+        Button(appModel.isRefreshing ? "Refreshing…" : "Refresh Now") {
           Task {
             await appModel.refresh()
+          }
+        }
+        .disabled(appModel.isRefreshing)
+      }
+
+      if showsDeveloperControls {
+        Section("Developer") {
+          Button(appModel.isRefreshing ? "Refreshing…" : "Trigger Scheduled Refresh") {
+            Task {
+              await appModel.refresh(trigger: .scheduled)
+            }
+          }
+          .help("Runs the scheduled refresh path immediately without waiting for the next timer tick.")
+          .disabled(appModel.isRefreshing)
+
+          ForEach(DeveloperInjectedEvent.allCases) { event in
+            Button(event.buttonTitle) {
+              Task {
+                await appModel.simulateDeveloperEvent(event)
+              }
+            }
+            .disabled(appModel.isRefreshing)
           }
         }
       }
@@ -101,5 +145,29 @@ struct SettingsView: View {
     let calendar = Calendar.current
     let date = calendar.date(from: components) ?? Date()
     return date.formatted(date: .omitted, time: .shortened)
+  }
+}
+
+private extension AppModel {
+  var refreshStateIconName: String {
+    switch refreshState {
+    case .idle:
+      return "checkmark.circle.fill"
+    case .refreshing:
+      return "arrow.triangle.2.circlepath"
+    case .failed:
+      return "exclamationmark.triangle.fill"
+    }
+  }
+
+  var refreshStateTint: Color {
+    switch refreshState {
+    case .idle:
+      return .green
+    case .refreshing:
+      return .secondary
+    case .failed:
+      return .orange
+    }
   }
 }

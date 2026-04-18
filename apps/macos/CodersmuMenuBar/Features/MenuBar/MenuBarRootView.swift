@@ -66,10 +66,16 @@ struct MenuBarRootView: View {
       Divider()
 
       HStack {
-        Button("Refresh Now") {
+        Button(appModel.isRefreshing ? "Refreshing…" : "Refresh Now") {
           Task {
             await appModel.refresh()
           }
+        }
+        .disabled(appModel.isRefreshing)
+
+        if appModel.isRefreshing {
+          ProgressView()
+            .controlSize(.small)
         }
 
         Menu("Notifications") {

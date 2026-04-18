@@ -1,4 +1,5 @@
 import { readMeetupCache } from '../cache'
+import { getMeetupSlug } from '../meetup-derived'
 import type { Meetup, MeetupCache, MeetupProvider } from '../types'
 
 export class CacheMeetupProvider implements MeetupProvider {
@@ -18,6 +19,6 @@ export class CacheMeetupProvider implements MeetupProvider {
   }
 
   async getMeetupBySlug(slug: string): Promise<Meetup | undefined> {
-    return this.cache.meetups.find((meetup) => meetup.slug === slug || meetup.id === slug)
+    return this.cache.meetups.find((meetup) => getMeetupSlug(meetup) === slug || meetup.id === slug)
   }
 }

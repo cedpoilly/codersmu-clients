@@ -16,6 +16,7 @@ enum MeetupChangeKind: String, Codable, Hashable {
 struct MeetupChangeEvent: Codable, Hashable, Identifiable {
   var kind: MeetupChangeKind
   var seatThreshold: Int?
+  var dedupeKey: String?
   var summary: String
   var detectedAt: Date
   var meetupSlug: String
@@ -25,6 +26,10 @@ struct MeetupChangeEvent: Codable, Hashable, Identifiable {
   }
 
   var fingerprint: String {
+    if let dedupeKey {
+      return "\(meetupSlug):\(kind.rawValue):\(dedupeKey)"
+    }
+
     if let seatThreshold {
       return "\(meetupSlug):\(kind.rawValue):\(seatThreshold)"
     }

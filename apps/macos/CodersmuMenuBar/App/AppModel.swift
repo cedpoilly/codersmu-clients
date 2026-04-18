@@ -78,6 +78,29 @@ final class AppModel {
     preferences.notificationsPaused || preferences.isSnoozed
   }
 
+  var isRefreshing: Bool {
+    if case .refreshing = refreshState {
+      return true
+    }
+
+    return false
+  }
+
+  var refreshStatusText: String {
+    switch refreshState {
+    case .idle:
+      guard let lastRefreshAt else {
+        return "Waiting for the first refresh."
+      }
+
+      return "Last updated \(lastRefreshAt.formatted(date: .abbreviated, time: .shortened))."
+    case .refreshing:
+      return "Refreshing meetup data…"
+    case .failed(let message):
+      return message
+    }
+  }
+
   func start() async {
     guard !hasStarted else {
       return
@@ -159,6 +182,48 @@ final class AppModel {
   func clearSnooze() {
     preferences.snoozedUntil = nil
     persistPreferences()
+  }
+
+  func simulateDeveloperEvent(_ event: DeveloperInjectedEvent) async {
+    refreshState = .refreshing
+
+    let baselineSnapshot: MeetupSnapshot?
+    if let snapshot {
+      baselineSnapshot = snapshot
+    } else if event == .nextMeetupCreated {
+      baselineSnapshot = nil
+    } else {
+      do {
+        baselineSnapshot = try await coordinator.fetchLatestSnapshot()
+      } catch {
+        refreshState = .failed("Couldn't load live meetup data for the simulation.")
+        return
+      }
+    }
+
+    guard let simulatedSnapshot = event.applying(to: baselineSnapshot) else {
+      refreshState = .failed("Couldn't load live meetup data for the simulation.")
+      return
+    }
+
+    let outcome = await coordinator.refresh(
+      trigger: .manual,
+      preferences: preferences,
+      latestSnapshot: simulatedSnapshot
+    )
+
+    snapshot = outcome.snapshot
+    lastRefreshAt = outcome.lastRefreshAt
+    if let newestEvent = outcome.events.first {
+      lastChange = newestEvent
+    }
+
+    if let errorDescription = outcome.errorDescription {
+      refreshState = .failed(errorDescription)
+    } else {
+      refreshState = .idle
+      launchAtLoginErrorMessage = nil
+    }
   }
 
   private func persistPreferences() {

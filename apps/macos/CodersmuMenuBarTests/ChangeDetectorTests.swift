@@ -29,20 +29,83 @@ final class ChangeDetectorTests: XCTestCase {
     XCTAssertEqual(events.first(where: { $0.kind == .seatThresholdReached })?.seatThreshold, 10)
   }
 
-  private func makeSnapshot(
-    venueName: String? = "Spoon Consulting Offices",
-    venueAddress: String? = "Moka",
-    seatsRemaining: Int? = 30
-  ) -> MeetupSnapshot {
-    MeetupSnapshot(
-      slug: "example-meetup",
-      title: "Example Meetup",
-      description: nil,
+  func testRepeatedScheduleChangesProduceDistinctFingerprints() {
+    let detector = ChangeDetector()
+    let original = makeSnapshot()
+    let firstChange = makeSnapshot(
+      startsAt: Date(timeIntervalSince1970: 1_800_000_300),
+      endsAt: Date(timeIntervalSince1970: 1_800_007_500)
+    )
+    let secondChange = makeSnapshot(
+      startsAt: Date(timeIntervalSince1970: 1_800_000_600),
+      endsAt: Date(timeIntervalSince1970: 1_800_007_800)
+    )
+
+    let firstEvent = detector.detectChanges(from: original, to: firstChange)
+      .first(where: { $0.kind == .dateChanged })
+    let secondEvent = detector.detectChanges(from: firstChange, to: secondChange)
+      .first(where: { $0.kind == .dateChanged })
+
+    XCTAssertNotNil(firstEvent)
+    XCTAssertNotNil(secondEvent)
+    XCTAssertNotEqual(firstEvent?.fingerprint, secondEvent?.fingerprint)
+  }
+
+  func testDateChangesStayOnSameMeetupWhenDisplaySlugChanges() {
+    let detector = ChangeDetector()
+    let original = makeSnapshot(
+      slug: "2026-05-23-the-may-meetup",
       startsAt: Date(timeIntervalSince1970: 1_800_000_000),
       endsAt: Date(timeIntervalSince1970: 1_800_007_200),
+      meetupURL: URL(string: "https://coders.mu/meetup/8846d85b-363a-41a1-8249-6034e34efacb")!
+    )
+    let changed = makeSnapshot(
+      slug: "2026-05-24-the-may-meetup",
+      startsAt: Date(timeIntervalSince1970: 1_800_086_400),
+      endsAt: Date(timeIntervalSince1970: 1_800_093_600),
+      meetupURL: URL(string: "https://coders.mu/meetup/8846d85b-363a-41a1-8249-6034e34efacb")!
+    )
+
+    let events = detector.detectChanges(from: original, to: changed)
+
+    XCTAssertTrue(events.contains(where: { $0.kind == .dateChanged }))
+    XCTAssertFalse(events.contains(where: { $0.kind == .nextMeetupCreated }))
+  }
+
+  func testRepeatedLocationChangesProduceDistinctFingerprints() {
+    let detector = ChangeDetector()
+    let original = makeSnapshot(venueName: "Venue A", venueAddress: "Address A")
+    let firstChange = makeSnapshot(venueName: "Venue B", venueAddress: "Address B")
+    let secondChange = makeSnapshot(venueName: "Venue C", venueAddress: "Address C")
+
+    let firstEvent = detector.detectChanges(from: original, to: firstChange)
+      .first(where: { $0.kind == .locationChanged })
+    let secondEvent = detector.detectChanges(from: firstChange, to: secondChange)
+      .first(where: { $0.kind == .locationChanged })
+
+    XCTAssertNotNil(firstEvent)
+    XCTAssertNotNil(secondEvent)
+    XCTAssertNotEqual(firstEvent?.fingerprint, secondEvent?.fingerprint)
+  }
+
+  private func makeSnapshot(
+    slug: String = "example-meetup",
+    venueName: String? = "Spoon Consulting Offices",
+    venueAddress: String? = "Moka",
+    seatsRemaining: Int? = 30,
+    startsAt: Date = Date(timeIntervalSince1970: 1_800_000_000),
+    endsAt: Date = Date(timeIntervalSince1970: 1_800_007_200),
+    meetupURL: URL = URL(string: "https://example.com/meetup")!
+  ) -> MeetupSnapshot {
+    MeetupSnapshot(
+      slug: slug,
+      title: "Example Meetup",
+      description: nil,
+      startsAt: startsAt,
+      endsAt: endsAt,
       venueName: venueName,
       venueAddress: venueAddress,
-      meetupURL: URL(string: "https://example.com/meetup")!,
+      meetupURL: meetupURL,
       rsvpURL: URL(string: "https://example.com/rsvp")!,
       seatsRemaining: seatsRemaining,
       status: .upcoming,

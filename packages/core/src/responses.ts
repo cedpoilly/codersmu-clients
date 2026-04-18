@@ -1,8 +1,18 @@
-import type { MeetupListResponse, MeetupResponse, NextMeetupResponse } from '@codersmu/contracts'
-
 import { fetchMeetupBySelector, fetchMeetupList } from './client'
-import type { Meetup, MeetupListState } from './types'
 import type { DefaultMeetupQueryOptions } from './client'
+import type { Meetup, MeetupListState } from './types'
+
+export interface MeetupResponse {
+  meetup: Meetup
+}
+
+export interface NextMeetupResponse {
+  meetup: Meetup | null
+}
+
+export interface MeetupListResponse {
+  meetups: Meetup[]
+}
 
 export function createMeetupResponse(meetup: Meetup): MeetupResponse {
   return { meetup }

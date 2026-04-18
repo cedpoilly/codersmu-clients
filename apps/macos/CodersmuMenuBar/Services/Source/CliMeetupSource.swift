@@ -42,18 +42,26 @@ struct CliMeetupSource: MeetupSource {
 
     let topLevelObject = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any]
     if let topLevelObject, topLevelObject.keys.contains("meetup") {
-      let response = try decoder.decode(CliNextMeetupResponse.self, from: data)
+      if let response = try? decoder.decode(CliNextMeetupResponse.self, from: data) {
+        return response.meetup?.snapshot(lastSyncedAt: lastSyncedAt)
+      }
+
+      let response = try decoder.decode(LegacyCliNextMeetupResponse.self, from: data)
       return response.meetup?.snapshot(lastSyncedAt: lastSyncedAt)
     }
 
-    let meetup = try decoder.decode(CliMeetup.self, from: data)
+    if let meetup = try? decoder.decode(CliMeetup.self, from: data) {
+      return meetup.snapshot(lastSyncedAt: lastSyncedAt)
+    }
+
+    let meetup = try decoder.decode(LegacyCliMeetup.self, from: data)
     return meetup.snapshot(lastSyncedAt: lastSyncedAt)
   }
 }
 
 private extension CliMeetupSource {
   func resolveCliInvocation() throws -> (executableURL: URL, arguments: [String]) {
-    let root = try findWorkspaceRoot(startingAt: Bundle.main.bundleURL)
+    let root = try resolveWorkspaceRoot()
     let cliURL = root.appendingPathComponent("dist/cli.mjs")
     let nodeURL = try resolveNodeExecutableURL()
 
@@ -65,6 +73,21 @@ private extension CliMeetupSource {
       executableURL: nodeURL,
       arguments: [cliURL.path, "next", "--json", "--refresh"]
     )
+  }
+
+  func resolveWorkspaceRoot() throws -> URL {
+    if let override = ProcessInfo.processInfo.environment["CODERSMU_WORKSPACE_ROOT"]?.trimmedNilIfEmpty {
+      let url = URL(fileURLWithPath: override, isDirectory: true)
+      let packageJSON = url.appendingPathComponent("package.json")
+      let cliURL = url.appendingPathComponent("dist/cli.mjs")
+
+      if FileManager.default.fileExists(atPath: packageJSON.path)
+        && FileManager.default.fileExists(atPath: cliURL.path) {
+        return url
+      }
+    }
+
+    return try findWorkspaceRoot(startingAt: Bundle.main.bundleURL)
   }
 
   func resolveNodeExecutableURL() throws -> URL {
@@ -118,42 +141,34 @@ private extension CliMeetupSource {
   }
 }
 
-private struct CliMeetup: Decodable {
-  struct Location: Decodable {
-    let name: String?
-    let address: String?
-    let city: String?
-  }
-
-  struct Links: Decodable {
-    let meetup: String
-    let rsvp: String?
-  }
-
-  let slug: String
+struct CliMeetup: Decodable {
+  let id: String
+  let slug: String?
   let title: String
-  let summary: String
-  let startsAt: String
-  let endsAt: String
+  let description: String?
+  let date: String?
+  let startTime: String?
+  let endTime: String?
+  let venue: String?
+  let location: String?
+  let acceptingRsvp: FlexibleBool?
   let status: String
-  let location: Location
   let seatsAvailable: Int?
-  let acceptingRsvp: Bool?
-  let links: Links
+  let rsvpLink: String?
 
   func snapshot(lastSyncedAt: Date) -> MeetupSnapshot {
-    MeetupSnapshot(
-      slug: slug,
+    let derivedSlug = slug?.trimmedNilIfEmpty ?? derivedSlugFromDateAndTitle
+    let meetupURL = URL(string: "https://coders.mu/meetup/\(slug?.trimmedNilIfEmpty ?? id)")!
+
+    return MeetupSnapshot(
+      slug: derivedSlug,
       title: title,
-      description: summary.normalizedSummary,
-      startsAt: parsedDate(startsAt),
-      endsAt: parsedDate(endsAt),
-      venueName: location.name?.normalizedLocationValue,
-      venueAddress: [location.address?.normalizedLocationValue, location.city?.normalizedLocationValue]
-        .compactMap { $0 }
-        .joined(separator: ", ")
-        .trimmedNilIfEmpty,
-      meetupURL: URL(string: links.meetup)!,
+      description: description?.normalizedSummary,
+      startsAt: startsAtDate,
+      endsAt: endsAtDate,
+      venueName: venue?.normalizedLocationValue,
+      venueAddress: location?.normalizedLocationValue,
+      meetupURL: meetupURL,
       rsvpURL: normalizedRsvpURL,
       seatsRemaining: seatsAvailable,
       status: normalizedStatus,
@@ -161,13 +176,45 @@ private struct CliMeetup: Decodable {
     )
   }
 
+  private var startsAtDate: Date? {
+    guard let date, let startTime = startTime?.trimmedNilIfEmpty else {
+      return nil
+    }
+
+    return buildUtcDate(date: date, time: startTime)
+  }
+
+  private var endsAtDate: Date? {
+    guard let date, let startTime = startTime?.trimmedNilIfEmpty else {
+      return nil
+    }
+
+    if let endTime = endTime?.trimmedNilIfEmpty {
+      return buildEndDate(date: date, startTime: startTime, endTime: endTime)
+    }
+
+    guard let startsAtDate else {
+      return nil
+    }
+
+    return Calendar.current.date(byAdding: .hour, value: 4, to: startsAtDate)
+  }
+
+  private var derivedSlugFromDateAndTitle: String {
+    if let date {
+      return "\(date.prefix(10))-\(title.slugified)"
+    }
+
+    return id
+  }
+
   private var normalizedRsvpURL: URL? {
-    if let rsvp = links.rsvp, let url = URL(string: rsvp) {
+    if let rsvpLink, let url = URL(string: rsvpLink) {
       return url
     }
 
-    if acceptingRsvp ?? false {
-      return URL(string: links.meetup)
+    if acceptingRsvp?.boolValue ?? false {
+      return URL(string: "https://coders.mu/meetup/\(slug?.trimmedNilIfEmpty ?? id)")
     }
 
     return nil
@@ -183,23 +230,182 @@ private struct CliMeetup: Decodable {
       return .upcoming
     }
   }
+}
 
-  private func parsedDate(_ value: String) -> Date? {
-    let formatterWithFractionalSeconds = ISO8601DateFormatter()
-    formatterWithFractionalSeconds.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+struct FlexibleBool: Decodable {
+  let boolValue: Bool
 
-    if let date = formatterWithFractionalSeconds.date(from: value) {
-      return date
+  init(from decoder: Decoder) throws {
+    let container = try decoder.singleValueContainer()
+    if let boolValue = try? container.decode(Bool.self) {
+      self.boolValue = boolValue
+      return
     }
 
-    let formatter = ISO8601DateFormatter()
-    formatter.formatOptions = [.withInternetDateTime]
-    return formatter.date(from: value)
+    if let intValue = try? container.decode(Int.self) {
+      self.boolValue = intValue != 0
+      return
+    }
+
+    throw DecodingError.typeMismatch(Bool.self, DecodingError.Context(
+      codingPath: decoder.codingPath,
+      debugDescription: "Expected a Bool or Int value."
+    ))
+  }
+}
+
+private func buildUtcDate(date: String, time: String) -> Date? {
+  let normalizedTime = time.normalizedTime
+  let day = String(date.prefix(10))
+  let formatter = ISO8601DateFormatter()
+  formatter.formatOptions = [.withInternetDateTime]
+  return formatter.date(from: "\(day)T\(normalizedTime):00+04:00")
+}
+
+private func buildEndDate(date: String, startTime: String, endTime: String) -> Date? {
+  guard let startDate = buildUtcDate(date: date, time: startTime) else {
+    return nil
+  }
+
+  let startMinutes = startTime.normalizedTime.totalMinutes
+  var endMinutes = endTime.normalizedTime.totalMinutes
+  if endMinutes <= startMinutes {
+    endMinutes += 24 * 60
+  }
+
+  return Calendar.current.date(byAdding: .minute, value: endMinutes - startMinutes, to: startDate)
+}
+
+private func parseISO8601Date(_ value: String?) -> Date? {
+  guard let value = value?.trimmingCharacters(in: .whitespacesAndNewlines), !value.isEmpty else {
+    return nil
+  }
+
+  let formatterWithFractionalSeconds = ISO8601DateFormatter()
+  formatterWithFractionalSeconds.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+
+  if let date = formatterWithFractionalSeconds.date(from: value) {
+    return date
+  }
+
+  let formatter = ISO8601DateFormatter()
+  formatter.formatOptions = [.withInternetDateTime]
+  return formatter.date(from: value)
+}
+
+private extension String {
+  var normalizedTime: String {
+    let parts = split(separator: ":", omittingEmptySubsequences: false)
+    let hours = parts.first.map(String.init) ?? "10"
+    let minutes = parts.count > 1 ? String(parts[1]) : "00"
+    return "\(hours.padding(toLength: 2, withPad: "0", startingAt: 0).prefix(2)):\(minutes.padding(toLength: 2, withPad: "0", startingAt: 0).prefix(2))"
+  }
+
+  var totalMinutes: Int {
+    let parts = normalizedTime.split(separator: ":")
+    let hours = Int(parts.first ?? "0") ?? 0
+    let minutes = Int(parts.last ?? "0") ?? 0
+    return hours * 60 + minutes
+  }
+
+  var slugified: String {
+    folding(options: .diacriticInsensitive, locale: .current)
+      .replacingOccurrences(of: "[^A-Za-z0-9\\s-]", with: "", options: .regularExpression)
+      .trimmingCharacters(in: .whitespacesAndNewlines)
+      .lowercased()
+      .replacingOccurrences(of: "[\\s_-]+", with: "-", options: .regularExpression)
+      .replacingOccurrences(of: "^-+|-+$", with: "", options: .regularExpression)
   }
 }
 
 private struct CliNextMeetupResponse: Decodable {
   let meetup: CliMeetup?
+}
+
+private struct LegacyCliNextMeetupResponse: Decodable {
+  let meetup: LegacyCliMeetup?
+}
+
+private struct LegacyCliMeetup: Decodable {
+  struct LegacyLocation: Decodable {
+    let name: String?
+    let address: String?
+    let city: String?
+  }
+
+  struct LegacyLinks: Decodable {
+    let meetup: String?
+    let rsvp: String?
+  }
+
+  let slug: String?
+  let title: String
+  let summary: String?
+  let startsAt: String?
+  let endsAt: String?
+  let status: String?
+  let location: LegacyLocation?
+  let seatsAvailable: Int?
+  let acceptingRsvp: FlexibleBool?
+  let links: LegacyLinks?
+
+  func snapshot(lastSyncedAt: Date) -> MeetupSnapshot {
+    let derivedSlug = slug?.trimmedNilIfEmpty ?? title.slugified
+    let venueAddress = [
+      location?.address?.normalizedLocationValue,
+      location?.city?.normalizedLocationValue,
+    ]
+      .compactMap { $0 }
+      .joined(separator: ", ")
+      .trimmedNilIfEmpty
+    let meetupURL = URL(string: links?.meetup?.trimmedNilIfEmpty ?? "https://coders.mu/meetup/\(derivedSlug)")!
+
+    return MeetupSnapshot(
+      slug: derivedSlug,
+      title: title,
+      description: summary?.normalizedSummary,
+      startsAt: parseISO8601Date(startsAt),
+      endsAt: parseISO8601Date(endsAt),
+      venueName: location?.name?.normalizedLocationValue,
+      venueAddress: venueAddress,
+      meetupURL: meetupURL,
+      rsvpURL: normalizedRsvpURL,
+      seatsRemaining: seatsAvailable,
+      status: normalizedStatus,
+      lastSyncedAt: lastSyncedAt
+    )
+  }
+
+  private var normalizedRsvpURL: URL? {
+    if let rsvp = links?.rsvp?.trimmedNilIfEmpty {
+      return URL(string: rsvp)
+    }
+
+    guard acceptingRsvp?.boolValue ?? false else {
+      return nil
+    }
+
+    if let meetup = links?.meetup?.trimmedNilIfEmpty {
+      return URL(string: meetup)
+    }
+
+    guard let slug = slug?.trimmedNilIfEmpty else {
+      return nil
+    }
+
+    return URL(string: "https://coders.mu/meetup/\(slug)")
+  }
+
+  private var normalizedStatus: MeetupStatus {
+    switch status?.lowercased() {
+    case "postponed":
+      return .postponed
+    case "canceled", "cancelled":
+      return .canceled
+    default:
+      return .upcoming
+    }
+  }
 }
 
 private enum CliMeetupSourceError: LocalizedError {
@@ -233,10 +439,6 @@ private extension String {
 
   var normalizedSummary: String? {
     guard let trimmed = trimmedNilIfEmpty else {
-      return nil
-    }
-
-    if trimmed == "No meetup description published yet." {
       return nil
     }
 

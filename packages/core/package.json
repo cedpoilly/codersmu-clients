@@ -32,8 +32,5 @@
     "typecheck": "tsc --noEmit",
     "check": "pnpm typecheck && pnpm test && pnpm build"
   },
-  "dependencies": {
-    "@codersmu/contracts": "workspace:*"
-  },
   "license": "MIT"
 }

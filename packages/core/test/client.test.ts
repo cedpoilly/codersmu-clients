@@ -8,23 +8,19 @@ const sampleCache: MeetupCache = {
   meetups: [
     {
       id: 'future-meetup',
-      slug: '2099-04-18-the-future-meetup',
       title: 'The Future Meetup',
-      summary: 'A sample meetup used in tests.',
-      startsAt: '2099-04-18T06:00:00.000Z',
-      endsAt: '2099-04-18T10:00:00.000Z',
-      timezone: 'Indian/Mauritius',
-      status: 'scheduled',
-      location: {
-        name: 'Test Venue',
-        city: 'Moka',
-      },
-      speakers: [],
+      description: 'A sample meetup used in tests.',
+      date: '2099-04-18',
+      startTime: '10:00',
+      endTime: '14:00',
+      venue: 'Test Venue',
+      location: 'Moka',
+      status: 'published',
+      photos: [],
       sessions: [],
       sponsors: [],
-      links: {
-        meetup: 'https://coders.mu/meetup/future-meetup',
-      },
+      acceptingRsvp: 0,
+      seatsAvailable: null,
     },
   ],
 }
@@ -32,17 +28,22 @@ const sampleCache: MeetupCache = {
 afterEach(() => {
   vi.resetModules()
   vi.doUnmock('../src/cache')
+  vi.doUnmock('../src/providers/frontendmu-api')
   vi.doUnmock('../src/providers/codersmu-scraper')
 })
 
 async function loadClientModule(options: {
   cached?: MeetupCache
   isFresh?: boolean
+  api?: MeetupCache | Error
   scraped?: MeetupCache | Error
 } = {}) {
   const readMeetupCache = vi.fn().mockResolvedValue(options.cached)
   const writeMeetupCache = vi.fn().mockResolvedValue('/tmp/meetups.json')
   const isMeetupCacheFresh = vi.fn().mockReturnValue(options.isFresh ?? false)
+  const fetchFrontendMuMeetups = options.api instanceof Error
+    ? vi.fn().mockRejectedValue(options.api)
+    : vi.fn().mockResolvedValue(options.api ?? sampleCache)
   const scrapeCodersMuMeetups = options.scraped instanceof Error
     ? vi.fn().mockRejectedValue(options.scraped)
     : vi.fn().mockResolvedValue(options.scraped ?? sampleCache)
@@ -51,6 +52,10 @@ async function loadClientModule(options: {
     readMeetupCache,
     writeMeetupCache,
     isMeetupCacheFresh,
+  }))
+
+  vi.doMock('../src/providers/frontendmu-api', () => ({
+    fetchFrontendMuMeetups,
   }))
 
   vi.doMock('../src/providers/codersmu-scraper', () => ({
@@ -64,13 +69,14 @@ async function loadClientModule(options: {
     readMeetupCache,
     writeMeetupCache,
     isMeetupCacheFresh,
+    fetchFrontendMuMeetups,
     scrapeCodersMuMeetups,
   }
 }
 
 describe('resolveDefaultMeetupProvider', () => {
   it('returns a fresh cache without scraping', async () => {
-    const { client, scrapeCodersMuMeetups, writeMeetupCache } = await loadClientModule({
+    const { client, fetchFrontendMuMeetups, scrapeCodersMuMeetups, writeMeetupCache } = await loadClientModule({
       cached: sampleCache,
       isFresh: true,
     })
@@ -78,43 +84,88 @@ describe('resolveDefaultMeetupProvider', () => {
     const provider = await client.resolveDefaultMeetupProvider()
 
     await expect(provider.listMeetups()).resolves.toEqual(sampleCache.meetups)
+    expect(fetchFrontendMuMeetups).not.toHaveBeenCalled()
     expect(scrapeCodersMuMeetups).not.toHaveBeenCalled()
     expect(writeMeetupCache).not.toHaveBeenCalled()
   })
 
-  it('falls back to stale cached data when background refresh fails', async () => {
-    const scrapeError = new Error('network down')
-    const { client, scrapeCodersMuMeetups, writeMeetupCache } = await loadClientModule({
+  it('uses the public API before the scraper fallback', async () => {
+    const apiCache: MeetupCache = {
+      ...sampleCache,
+      source: 'https://coders.mu/api/public/v1/meetups',
+    }
+    const { client, fetchFrontendMuMeetups, scrapeCodersMuMeetups, writeMeetupCache } = await loadClientModule({
+      isFresh: false,
+      api: apiCache,
+    })
+
+    const provider = await client.resolveDefaultMeetupProvider()
+
+    await expect(provider.listMeetups()).resolves.toEqual(apiCache.meetups)
+    expect(fetchFrontendMuMeetups).toHaveBeenCalledTimes(1)
+    expect(scrapeCodersMuMeetups).not.toHaveBeenCalled()
+    expect(writeMeetupCache).toHaveBeenCalledWith(apiCache)
+  })
+
+  it('falls back to the scraper when the public API fails', async () => {
+    const apiError = new Error('api down')
+    const { client, fetchFrontendMuMeetups, scrapeCodersMuMeetups, writeMeetupCache } = await loadClientModule({
+      isFresh: false,
+      api: apiError,
+      scraped: sampleCache,
+    })
+
+    const provider = await client.resolveDefaultMeetupProvider()
+
+    await expect(provider.listMeetups()).resolves.toEqual(sampleCache.meetups)
+    expect(fetchFrontendMuMeetups).toHaveBeenCalledTimes(1)
+    expect(scrapeCodersMuMeetups).toHaveBeenCalledTimes(1)
+    expect(writeMeetupCache).toHaveBeenCalledWith(sampleCache)
+  })
+
+  it('falls back to stale cached data when all live refresh paths fail', async () => {
+    const apiError = new Error('api down')
+    const scrapeError = new Error('scraper down')
+    const { client, fetchFrontendMuMeetups, scrapeCodersMuMeetups, writeMeetupCache } = await loadClientModule({
       cached: sampleCache,
       isFresh: false,
+      api: apiError,
       scraped: scrapeError,
     })
 
     const provider = await client.resolveDefaultMeetupProvider()
 
     await expect(provider.listMeetups()).resolves.toEqual(sampleCache.meetups)
+    expect(fetchFrontendMuMeetups).toHaveBeenCalledTimes(1)
     expect(scrapeCodersMuMeetups).toHaveBeenCalledTimes(1)
     expect(writeMeetupCache).not.toHaveBeenCalled()
   })
 
-  it('throws on forced refresh when the live scrape fails', async () => {
-    const scrapeError = new Error('network down')
-    const { client, scrapeCodersMuMeetups, writeMeetupCache } = await loadClientModule({
+  it('throws on forced refresh when the API and scraper both fail', async () => {
+    const apiError = new Error('api down')
+    const scrapeError = new Error('scraper down')
+    const { client, fetchFrontendMuMeetups, scrapeCodersMuMeetups, writeMeetupCache } = await loadClientModule({
       cached: sampleCache,
       isFresh: false,
+      api: apiError,
       scraped: scrapeError,
     })
 
-    await expect(client.resolveDefaultMeetupProvider({ forceRefresh: true })).rejects.toThrow('network down')
+    await expect(client.resolveDefaultMeetupProvider({ forceRefresh: true })).rejects.toThrow(
+      'Coders.mu API request failed and scraper fallback also failed.',
+    )
+    expect(fetchFrontendMuMeetups).toHaveBeenCalledTimes(1)
     expect(scrapeCodersMuMeetups).toHaveBeenCalledTimes(1)
     expect(writeMeetupCache).not.toHaveBeenCalled()
   })
 
   it('can explicitly allow stale fallback even during a forced refresh', async () => {
-    const scrapeError = new Error('network down')
+    const apiError = new Error('api down')
+    const scrapeError = new Error('scraper down')
     const { client } = await loadClientModule({
       cached: sampleCache,
       isFresh: false,
+      api: apiError,
       scraped: scrapeError,
     })
 
@@ -124,5 +175,58 @@ describe('resolveDefaultMeetupProvider', () => {
     })
 
     await expect(provider.listMeetups()).resolves.toEqual(sampleCache.meetups)
+  })
+
+  it('uses the shared upcoming selector for list filtering', async () => {
+    const dateTbaMeetup: MeetupCache['meetups'][number] = {
+      id: 'date-tba',
+      title: 'Date TBA Meetup',
+      description: 'Published without a start time yet.',
+      date: '2099-04-17',
+      startTime: null,
+      endTime: null,
+      venue: 'TBA',
+      location: 'Mauritius',
+      status: 'published',
+      photos: [],
+      sessions: [],
+      sponsors: [],
+      acceptingRsvp: 0,
+      seatsAvailable: null,
+    }
+    const canceledMeetup: MeetupCache['meetups'][number] = {
+      id: 'canceled-meetup',
+      title: 'Canceled Meetup',
+      description: 'Should not remain in the upcoming list.',
+      date: '2099-04-18',
+      startTime: '10:00',
+      endTime: '14:00',
+      venue: 'Test Venue',
+      location: 'Moka',
+      status: 'canceled',
+      photos: [],
+      sessions: [],
+      sponsors: [],
+      acceptingRsvp: 0,
+      seatsAvailable: null,
+    }
+    const scheduledMeetup: MeetupCache['meetups'][number] = {
+      ...sampleCache.meetups[0],
+      id: 'scheduled-meetup',
+      title: 'Scheduled Meetup',
+    }
+
+    const { client } = await loadClientModule({
+      cached: {
+        ...sampleCache,
+        meetups: [canceledMeetup, scheduledMeetup, dateTbaMeetup],
+      },
+      isFresh: true,
+    })
+
+    await expect(client.fetchMeetupList('upcoming')).resolves.toMatchObject([
+      { id: 'date-tba' },
+      { id: 'scheduled-meetup' },
+    ])
   })
 })

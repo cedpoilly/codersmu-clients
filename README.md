@@ -12,7 +12,7 @@ The primary client today is the CLI at the repository root.
 
 - installable from GitHub
 - commands exposed as `codersmu` and `cmu`
-- live data currently comes from scraping public pages
+- live data now comes from the public `coders.mu` API
 - intended as a prototype, not a stable release
 
 ### Raycast
@@ -28,8 +28,9 @@ The Raycast client lives in `apps/raycast`.
 
 - exploratory prototype, not a stable product
 - GitHub-first distribution, no npm release yet
-- scraper-backed data source can break if the website markup changes
-- future HTTP/API integration is expected to replace the scraper
+- public `coders.mu` API is now the primary data source
+- scraper fallback still exists as a compatibility path if the API is temporarily unavailable
+- CLI and Raycast use a 1-hour cache window during business hours by default, and a 6-hour window outside them
 
 ## CLI
 
@@ -80,9 +81,14 @@ Use `--short` or `-s` for a more compact human-readable listing.
 Use `--refresh` on read commands to bypass the local cache for that invocation.
 Use `ls` and `show` as short aliases for `list` and `view`.
 
+Breaking changes:
+- `codersmu list --json` now returns a bare JSON array of meetups instead of `{ "meetups": [...] }`.
+- `codersmu view <slug> --json` now returns the bare meetup object instead of `{ "meetup": {...} }`.
+- `codersmu view next --json` now exits with the same not-found behavior as the human-readable command when there is no upcoming meetup, instead of returning `{ "meetup": null }`.
+
 ## Raycast
 
-The Raycast extension currently uses the same shared scraper-backed core layer as the CLI.
+The Raycast extension currently uses the same shared API-backed core layer as the CLI.
 
 To run it locally:
 
@@ -153,6 +159,6 @@ pnpm release:check
 
 GitHub Actions already exist for CI and a future npm release path, but npm publishing is intentionally deferred while the project remains exploratory.
 
-## Future API Integration
+## API Integration
 
-The expected next architectural step is replacing the current scraper-backed provider with an HTTP-backed provider that maps the publisher endpoint to the shared `Meetup` type. The CLI and Raycast clients should then consume that shared model without changing their user-facing behavior too much.
+The shared core now reads meetup data from the public `coders.mu` API at `https://coders.mu/api/public/v1/meetups` and keeps the shared `Meetup` type aligned to that API contract. The legacy scraper remains available only as a fallback path.

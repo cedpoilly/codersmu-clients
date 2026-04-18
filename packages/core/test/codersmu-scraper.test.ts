@@ -44,13 +44,33 @@ describe('scrapeCodersMuMeetups', () => {
             endTime: '14:00',
             venue: 'The Venue',
             location: 'Vivea Business Park',
-            acceptingRsvp: true,
+            status: 'published',
+            acceptingRsvp: 1,
             seatsAvailable: 12,
             rsvpLink: 'https://coders.mu/rsvp/future-meetup',
             mapUrl: 'https://maps.example.com/future-meetup',
             parkingLocation: 'https://parking.example.com/future-meetup',
+            sessions: [
+              {
+                id: 'session-1',
+                title: '<strong>Shipping Better Clients</strong>',
+                description: '<p>How to avoid <em>regressions</em>.</p>',
+                speakers: [
+                  {
+                    id: 'speaker-1',
+                    name: '<span>Grace Hopper</span>',
+                  },
+                ],
+              },
+            ],
+            sponsors: [
+              {
+                id: 'sponsor-1',
+                name: '<strong>Coders.mu</strong>',
+                sponsorTypes: ['community'],
+              },
+            ],
           },
-          rsvpCount: 7,
         },
       }), { status: 200 }))
 
@@ -67,24 +87,49 @@ describe('scrapeCodersMuMeetups', () => {
     expect(cache.meetups).toHaveLength(1)
     expect(cache.meetups[0]).toMatchObject({
       id: 'future-meetup',
-      slug: '2099-04-18-the-test-meetup',
       title: 'The Test Meetup',
-      summary: 'Hello Coders.mu',
-      status: 'scheduled',
-      location: {
-        name: 'The Venue',
-        address: 'Vivea Business Park',
-      },
+      description: '<p>Hello <strong>Coders.mu</strong></p>',
+      date: '2099-04-18',
+      startTime: '10:00',
+      endTime: '14:00',
+      venue: 'The Venue',
+      location: 'Vivea Business Park',
+      status: 'published',
       seatsAvailable: 12,
-      rsvpCount: 7,
-      acceptingRsvp: true,
-      links: {
-        meetup: 'https://coders.mu/meetup/future-meetup',
-        rsvp: 'https://coders.mu/rsvp/future-meetup',
-        map: 'https://maps.example.com/future-meetup',
-        parking: 'https://parking.example.com/future-meetup',
-      },
+      acceptingRsvp: 1,
+      rsvpLink: 'https://coders.mu/rsvp/future-meetup',
+      mapUrl: 'https://maps.example.com/future-meetup',
+      parkingLocation: 'https://parking.example.com/future-meetup',
+      photos: [],
     })
+    expect(cache.meetups[0]?.sessions).toEqual([
+      {
+        id: 'session-1',
+        title: 'Shipping Better Clients',
+        description: 'How to avoid regressions.',
+        order: null,
+        speakers: [
+          {
+            id: 'speaker-1',
+            name: 'Grace Hopper',
+            githubUsername: null,
+            avatarUrl: null,
+            featured: null,
+          },
+        ],
+      },
+    ])
+    expect(cache.meetups[0]?.sponsors).toEqual([
+      {
+        id: 'sponsor-1',
+        name: 'Coders.mu',
+        website: null,
+        logoUrl: null,
+        sponsorTypes: ['community'],
+        logoBg: null,
+        status: null,
+      },
+    ])
   })
 
   it('turns fetch timeouts into a bounded error', async () => {

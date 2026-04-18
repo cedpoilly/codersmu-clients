@@ -7,11 +7,6 @@ const extensionDir = resolve(scriptDir, "..");
 const vendorRoot = resolve(extensionDir, "vendor");
 const sharedPackages = [
   {
-    sourceDir: resolve(extensionDir, "../../packages/contracts/src"),
-    vendorDir: resolve(vendorRoot, "contracts"),
-    label: "contracts",
-  },
-  {
     sourceDir: resolve(extensionDir, "../../packages/core/src"),
     vendorDir: resolve(vendorRoot, "core"),
     label: "core",
@@ -81,7 +76,7 @@ try {
     );
     exitCode = 1;
   } else if (syncedPackages > 0) {
-    console.log("Synced shared contracts and core into vendor/.");
+    console.log("Synced shared core into vendor/.");
   } else {
     console.log("Shared package sources not found; using existing vendored snapshots.");
   }

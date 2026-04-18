@@ -14,65 +14,60 @@ vi.mock("@raycast/api", () => ({
 import type { Meetup } from "./core";
 import {
   formatMeetupLocation,
+  formatMeetupRange,
   getMeetupAudienceLabel,
+  meetupHasCalendarSchedule,
   getMeetupStatusColor,
   getMeetupStatusIcon,
-  getMeetupTagNames,
   meetupKeywords,
   renderMeetupMarkdown,
 } from "./format";
 
 const baseMeetup: Meetup = {
   id: "future-meetup",
-  slug: "2099-04-18-the-test-meetup",
   title: "The Test Meetup",
-  summary: "A meetup about testing the Raycast layer.",
-  startsAt: "2099-04-18T06:00:00.000Z",
-  endsAt: "2099-04-18T10:00:00.000Z",
-  timezone: "Indian/Mauritius",
-  status: "scheduled",
-  location: {
-    name: "The Venue",
-    address: "Vivea Business Park",
-    city: "Moka",
-  },
-  speakers: [
-    {
-      name: "Ada Lovelace",
-      githubUsername: "ada",
-    },
-  ],
+  description: "A meetup about testing the Raycast layer.",
+  date: "2099-04-18",
+  startTime: "10:00",
+  endTime: "14:00",
+  venue: "The Venue",
+  location: "Vivea Business Park, Moka",
+  status: "published",
+  photos: [],
   sessions: [
     {
+      id: "shipping-session",
       title: "Shipping Better Clients",
       description: "How to avoid regressions while shipping quickly.",
+      order: 1,
       speakers: [
         {
+          id: "grace-hopper",
           name: "Grace Hopper",
+          githubUsername: null,
+          avatarUrl: null,
+          featured: 1,
         },
       ],
     },
   ],
   sponsors: [
     {
+      id: "codersmu-sponsor",
       name: "Coders.mu",
       website: "https://coders.mu",
+      logoUrl: null,
       sponsorTypes: ["community"],
+      logoBg: null,
+      status: "active",
     },
   ],
-  tags: ["testing", "raycast"],
   attendeeCount: 22,
   seatsAvailable: 11,
-  rsvpCount: 8,
-  acceptingRsvp: true,
-  links: {
-    meetup: "https://coders.mu/meetup/future-meetup",
-    rsvp: "https://coders.mu/rsvp/future-meetup",
-    recording: "https://videos.example.com/future-meetup",
-    slides: "https://slides.example.com/future-meetup",
-    map: "https://maps.example.com/future-meetup",
-    parking: "https://parking.example.com/future-meetup",
-  },
+  acceptingRsvp: 1,
+  rsvpLink: "https://coders.mu/rsvp/future-meetup",
+  mapUrl: "https://maps.example.com/future-meetup",
+  parkingLocation: "https://parking.example.com/future-meetup",
 };
 
 describe("Raycast meetup formatting", () => {
@@ -88,13 +83,23 @@ describe("Raycast meetup formatting", () => {
     expect(
       formatMeetupLocation({
         ...baseMeetup,
-        location: {
-          name: "",
-          address: undefined,
-          city: undefined,
-        },
+        venue: "",
+        location: undefined,
       }),
     ).toBe("TBA");
+  });
+
+  it("treats unscheduled meetups as TBA and disables calendar actions", () => {
+    const tbaMeetup = {
+      ...baseMeetup,
+      date: null,
+      startTime: null,
+      endTime: null,
+    };
+
+    expect(formatMeetupRange(tbaMeetup)).toBe("Date TBA");
+    expect(meetupHasCalendarSchedule(tbaMeetup)).toBe(false);
+    expect(meetupHasCalendarSchedule(baseMeetup)).toBe(true);
   });
 
   it("keeps audience labels prioritized by seats, then RSVPs, then attendees", () => {
@@ -104,19 +109,11 @@ describe("Raycast meetup formatting", () => {
         ...baseMeetup,
         seatsAvailable: null,
       }),
-    ).toBe("8 RSVPs");
-    expect(
-      getMeetupAudienceLabel({
-        ...baseMeetup,
-        seatsAvailable: null,
-        rsvpCount: 0,
-      }),
     ).toBe("22 attendees");
     expect(
       getMeetupAudienceLabel({
         ...baseMeetup,
         seatsAvailable: null,
-        rsvpCount: 0,
         attendeeCount: 0,
       }),
     ).toBeUndefined();
@@ -127,18 +124,13 @@ describe("Raycast meetup formatting", () => {
       expect.arrayContaining([
         "2099-04-18-the-test-meetup",
         "The Test Meetup",
-        "scheduled",
+        "published",
         "The Venue",
-        "Vivea Business Park",
-        "Moka",
-        "testing",
-        "raycast",
-        "Ada Lovelace",
+        "Vivea Business Park, Moka",
         "Coders.mu",
         "Shipping Better Clients",
       ]),
     );
-    expect(getMeetupTagNames(baseMeetup)).toEqual(["testing", "raycast"]);
     expect(getMeetupStatusColor(baseMeetup)).toBe("blue");
     expect(getMeetupStatusIcon(baseMeetup)).toEqual({
       source: "circle",
@@ -157,15 +149,7 @@ describe("Raycast meetup formatting", () => {
     );
     expect(markdown).toContain("## Sponsors");
     expect(markdown).toContain("- Coders.mu (https://coders.mu)");
-    expect(markdown).toContain("## Tags");
-    expect(markdown).toContain("- testing");
     expect(markdown).toContain("## Links");
-    expect(markdown).toContain(
-      "- [Recording](https://videos.example.com/future-meetup)",
-    );
-    expect(markdown).toContain(
-      "- [Slides](https://slides.example.com/future-meetup)",
-    );
     expect(markdown).toContain(
       "- [Parking](https://parking.example.com/future-meetup)",
     );

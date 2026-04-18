@@ -1,7 +1,7 @@
 import type { Meetup, MeetupCache } from '../types'
 
-const SOURCE_URL = 'https://coders.mu/meetups/'
-const DETAIL_URL_PREFIX = 'https://coders.mu/meetup/'
+const API_BASE_URL = process.env.CODERSMU_API_BASE_URL ?? 'https://coders.mu/api/public/v1'
+const MEETUPS_API_URL = `${API_BASE_URL}/meetups`
 const FETCH_TIMEOUT_MS = 10_000
 
 interface RawSpeaker {
@@ -55,83 +55,14 @@ interface RawMeetup {
   parkingLocation?: string | null
 }
 
-interface IndexPayload {
-  props: {
-    meetups: RawMeetup[]
-  }
-}
-
-interface DetailPayload {
-  props: {
-    meetup: RawMeetup
-  }
-}
-
-function decodeHtmlEntities(value: string): string {
-  return value.replaceAll(/&(#(\d+)|#x([0-9a-fA-F]+)|[a-zA-Z]+);/g, (entity, _whole, decimal, hex) => {
-    if (decimal) {
-      return String.fromCodePoint(Number(decimal))
-    }
-
-    if (hex) {
-      return String.fromCodePoint(Number.parseInt(hex, 16))
-    }
-
-    switch (entity) {
-      case '&quot;':
-        return '"'
-      case '&amp;':
-        return '&'
-      case '&lt;':
-        return '<'
-      case '&gt;':
-        return '>'
-      case '&apos;':
-      case '&#039;':
-        return '\''
-      case '&nbsp;':
-        return ' '
-      default:
-        return entity
-    }
-  })
-}
-
-function stripHtml(value: string | null | undefined): string {
-  if (!value) {
-    return ''
-  }
-
-  return decodeHtmlEntities(
-    value
-      .replaceAll(/<br\s*\/?>/gi, '\n')
-      .replaceAll(/<\/p>/gi, '\n\n')
-      .replaceAll(/<li>/gi, '- ')
-      .replaceAll(/<\/li>/gi, '\n')
-      .replaceAll(/<[^>]+>/g, '')
-      .replaceAll(/\r/g, ''),
-  )
-    .replaceAll(/\n{3,}/g, '\n\n')
-    .trim()
-}
-
-function extractDataPageJson(html: string): string {
-  const match = html.match(/data-page="([^"]+)"/)
-  if (!match) {
-    throw new Error('Unable to find data-page payload in coders.mu response.')
-  }
-
-  return decodeHtmlEntities(match[1])
-}
-
-async function fetchText(url: string): Promise<string> {
+async function fetchJson<T>(url: string): Promise<T> {
   let response: Response
 
   try {
     response = await fetch(url, {
       headers: {
+        accept: 'application/json',
         'user-agent': 'codersmu-clients/0.0.0-prototype.1 (+https://coders.mu)',
-        accept: 'text/html,application/xhtml+xml',
       },
       signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
     })
@@ -148,19 +79,15 @@ async function fetchText(url: string): Promise<string> {
     throw new Error(`Request failed for ${url}: ${response.status} ${response.statusText}`)
   }
 
-  return response.text()
+  return response.json() as Promise<T>
 }
 
-async function fetchIndexMeetups(): Promise<RawMeetup[]> {
-  const html = await fetchText(SOURCE_URL)
-  const payload = JSON.parse(extractDataPageJson(html)) as IndexPayload
-  return payload.props.meetups
+async function fetchMeetupIndex(): Promise<RawMeetup[]> {
+  return fetchJson<RawMeetup[]>(MEETUPS_API_URL)
 }
 
 async function fetchMeetupDetail(id: string): Promise<RawMeetup> {
-  const html = await fetchText(`${DETAIL_URL_PREFIX}${id}`)
-  const payload = JSON.parse(extractDataPageJson(html)) as DetailPayload
-  return payload.props.meetup
+  return fetchJson<RawMeetup>(`${MEETUPS_API_URL}/${encodeURIComponent(id)}`)
 }
 
 async function mapConcurrent<Input, Output>(
@@ -205,12 +132,12 @@ function normalizeMeetup(rawMeetup: RawMeetup): Meetup {
     photos: rawMeetup.photos ?? [],
     sessions: (rawMeetup.sessions ?? []).map((session) => ({
       id: session.id,
-      title: stripHtml(session.title),
-      description: stripHtml(session.description) || null,
+      title: session.title,
+      description: session.description ?? null,
       order: session.order ?? null,
       speakers: (session.speakers ?? []).map((speaker) => ({
         id: speaker.id,
-        name: stripHtml(speaker.name),
+        name: speaker.name,
         githubUsername: speaker.githubUsername ?? null,
         avatarUrl: speaker.avatarUrl ?? null,
         featured: speaker.featured ?? null,
@@ -218,7 +145,7 @@ function normalizeMeetup(rawMeetup: RawMeetup): Meetup {
     })),
     sponsors: (rawMeetup.sponsors ?? []).map((sponsor) => ({
       id: sponsor.id,
-      name: stripHtml(sponsor.name),
+      name: sponsor.name,
       website: sponsor.website ?? null,
       logoUrl: sponsor.logoUrl ?? null,
       sponsorTypes: sponsor.sponsorTypes ?? [],
@@ -233,12 +160,19 @@ function normalizeMeetup(rawMeetup: RawMeetup): Meetup {
   }
 }
 
-export async function scrapeCodersMuMeetups(): Promise<MeetupCache> {
-  const indexMeetups = await fetchIndexMeetups()
-  const details = await mapConcurrent(indexMeetups, 4, async (meetup) => fetchMeetupDetail(meetup.id))
+export async function fetchFrontendMuMeetups(): Promise<MeetupCache> {
+  const meetups = await fetchMeetupIndex()
+  const details = await mapConcurrent(meetups, 4, async (meetup) => {
+    try {
+      return await fetchMeetupDetail(meetup.id)
+    }
+    catch {
+      return meetup
+    }
+  })
 
   return {
-    source: SOURCE_URL,
+    source: MEETUPS_API_URL,
     scrapedAt: new Date().toISOString(),
     meetups: details.map(normalizeMeetup),
   }
