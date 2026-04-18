@@ -65,6 +65,10 @@ export function getMeetupStatusLabel(meetup: Meetup): string {
       return "Live";
     case "completed":
       return "Past";
+    case "postponed":
+      return "Postponed";
+    case "canceled":
+      return "Canceled";
     default:
       return "Upcoming";
   }
@@ -76,6 +80,10 @@ export function getMeetupStatusColor(meetup: Meetup): Color {
       return Color.Green;
     case "completed":
       return Color.SecondaryText;
+    case "postponed":
+      return Color.Yellow;
+    case "canceled":
+      return Color.Red;
     default:
       return Color.Blue;
   }

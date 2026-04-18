@@ -14,6 +14,6 @@ struct HTTPMeetupSource: MeetupSource {
       return nil
     }
 
-    return meetup.toSnapshot(lastSyncedAt: Date())
+    return try meetup.toSnapshot(lastSyncedAt: Date())
   }
 }

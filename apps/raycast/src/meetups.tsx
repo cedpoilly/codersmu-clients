@@ -49,8 +49,12 @@ export default function MeetupsCommand() {
 
   const meetups = data ?? [];
   const live = meetups.filter((meetup) => meetup.status === "ongoing");
-  const upcoming = meetups.filter((meetup) => meetup.status === "scheduled");
-  const past = meetups.filter((meetup) => meetup.status === "completed");
+  const upcoming = meetups.filter(
+    (meetup) => meetup.status === "scheduled" || meetup.status === "postponed",
+  );
+  const past = meetups.filter(
+    (meetup) => meetup.status === "completed" || meetup.status === "canceled",
+  );
   const visibleLive = filter === "past" ? [] : live;
   const visibleUpcoming = filter === "past" ? [] : upcoming;
   const visiblePast = filter === "upcoming" ? [] : past;

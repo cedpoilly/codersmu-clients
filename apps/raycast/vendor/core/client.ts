@@ -44,11 +44,6 @@ export async function refreshDefaultMeetupCache(): Promise<{ cache: MeetupCache,
   return { cache, cacheFile }
 }
 
-export async function fetchMeetup(selector: string, options?: DefaultMeetupQueryOptions): Promise<Meetup | undefined> {
-  const provider = await resolveDefaultMeetupProvider(options)
-  return provider.getMeetupBySlug(selector)
-}
-
 export async function fetchMeetupBySelector(selector: string, options?: DefaultMeetupQueryOptions): Promise<Meetup | undefined> {
   const provider = await resolveDefaultMeetupProvider(options)
   return getMeetup(provider, selector)

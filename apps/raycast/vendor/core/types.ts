@@ -1,3 +1,5 @@
+import type { Meetup } from '@codersmu/contracts'
+
 export type {
   Meetup,
   MeetupLinks,
@@ -11,12 +13,12 @@ export type {
 export interface MeetupCache {
   source: string
   scrapedAt: string
-  meetups: import('@codersmu/contracts').Meetup[]
+  meetups: Meetup[]
 }
 
 export interface MeetupProvider {
-  listMeetups(): Promise<import('@codersmu/contracts').Meetup[]>
-  getMeetupBySlug(slug: string): Promise<import('@codersmu/contracts').Meetup | undefined>
+  listMeetups(): Promise<Meetup[]>
+  getMeetupBySlug(slug: string): Promise<Meetup | undefined>
 }
 
 export type MeetupListState = 'upcoming' | 'past' | 'all'

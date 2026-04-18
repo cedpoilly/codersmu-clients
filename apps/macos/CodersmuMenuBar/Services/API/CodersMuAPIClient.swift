@@ -46,7 +46,12 @@ struct CodersMuAPIClient {
   }
 
   private func fetchMeetupDetail(id: String) async throws -> CodersMuMeetupDTO {
-    let html = try await fetchHTML(from: URL(string: "\(meetupDetailURLPrefix)\(id)")!)
+    let encodedId = id.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? id
+    guard let detailURL = URL(string: "\(meetupDetailURLPrefix)\(encodedId)") else {
+      throw APIError.invalidPayload("Coders.mu returned an unusable meetup id: \(id)")
+    }
+
+    let html = try await fetchHTML(from: detailURL)
     let json = try extractDataPageJSON(from: html)
     let decoder = JSONDecoder()
     let payload = try decoder.decode(CodersMuDetailPayload.self, from: Data(json.utf8))

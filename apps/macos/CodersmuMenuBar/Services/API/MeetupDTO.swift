@@ -148,8 +148,12 @@ struct MeetupDTO: Decodable {
   let acceptingRsvp: Bool?
   let links: MeetupLinksDTO
 
-  func toSnapshot(lastSyncedAt: Date) -> MeetupSnapshot {
-    MeetupSnapshot(
+  func toSnapshot(lastSyncedAt: Date) throws -> MeetupSnapshot {
+    guard let meetupURL = URL(string: links.meetup ?? "") else {
+      throw APIError.invalidPayload("Coders.mu returned an unusable meetup URL for \(id).")
+    }
+
+    return MeetupSnapshot(
       slug: slug,
       title: title,
       description: summary.normalizedSummary,
@@ -160,24 +164,20 @@ struct MeetupDTO: Decodable {
         .compactMap { $0 }
         .joined(separator: ", ")
         .trimmedNilIfEmpty,
-      meetupURL: URL(string: links.meetup ?? "\(meetupDetailURLPrefix)\(id)")!,
-      rsvpURL: normalizedRsvpURL,
+      meetupURL: meetupURL,
+      rsvpURL: normalizedRsvpURL(meetupURL: meetupURL),
       seatsRemaining: seatsAvailable,
       status: snapshotStatus,
       lastSyncedAt: lastSyncedAt
     )
   }
 
-  private var normalizedRsvpURL: URL? {
+  private func normalizedRsvpURL(meetupURL: URL) -> URL? {
     if let rsvp = links.rsvp, let url = URL(string: rsvp) {
       return url
     }
 
-    if acceptingRsvp ?? false {
-      return URL(string: links.meetup ?? "\(meetupDetailURLPrefix)\(id)")
-    }
-
-    return nil
+    return (acceptingRsvp ?? false) ? meetupURL : nil
   }
 
   private var snapshotStatus: MeetupStatus {
@@ -244,8 +244,8 @@ struct CodersMuMeetupDTO: Decodable {
     let startMinutes = toMinutes(normalizeTime(startTime))
     var endMinutes = toMinutes(normalizeTime(endTime))
 
-    while endMinutes <= startMinutes {
-      endMinutes += 12 * 60
+    if endMinutes <= startMinutes {
+      endMinutes += 24 * 60
     }
 
     let normalizedHours = (endMinutes / 60) % 24
@@ -267,7 +267,8 @@ struct CodersMuMeetupDTO: Decodable {
     let cleanTitle = stripHTML(title) ?? title
     let venueName = normalizeLocationValue(stripHTML(venue) ?? "TBA")
     let venueAddress = normalizeLocationValue(stripHTML(location))
-    let meetupURL = "\(meetupDetailURLPrefix)\(id)"
+    let encodedId = id.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? id
+    let meetupURL = "\(meetupDetailURLPrefix)\(encodedId)"
     let normalizedSessions = sessions?.map { session in
       MeetupSessionDTO(
         title: stripHTML(session.title) ?? session.title,
