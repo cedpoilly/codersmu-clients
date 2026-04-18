@@ -1,6 +1,8 @@
 import { isMeetupCacheFresh, readMeetupCache, writeMeetupCache } from './cache'
-import { getMeetup, getPastMeetups, getSortedMeetups, getUpcomingMeetups } from './meetups'
+import { getMeetupEndsAt } from './meetup-derived'
+import { getMeetup, getPastMeetups, getUpcomingMeetups, sortMeetupsAscending } from './meetups'
 import { CacheMeetupProvider } from './providers/cache-provider'
+import { fetchFrontendMuMeetups } from './providers/frontendmu-api'
 import { scrapeCodersMuMeetups } from './providers/codersmu-scraper'
 import type { Meetup, MeetupCache, MeetupListState, MeetupProvider } from './types'
 
@@ -11,8 +13,24 @@ interface ResolveDefaultMeetupProviderOptions {
 
 export type DefaultMeetupQueryOptions = ResolveDefaultMeetupProviderOptions
 
-function sortMeetupsAscending(meetups: Meetup[]): Meetup[] {
-  return [...meetups].sort((left, right) => Date.parse(left.startsAt) - Date.parse(right.startsAt))
+async function fetchLiveMeetupCache(): Promise<MeetupCache> {
+  try {
+    return await fetchFrontendMuMeetups()
+  }
+  catch (apiError) {
+    try {
+      return await scrapeCodersMuMeetups()
+    }
+    catch (scrapeError) {
+      throw new Error(
+        `Coders.mu API request failed and scraper fallback also failed. API: ${
+          apiError instanceof Error ? apiError.message : String(apiError)
+        }. Scraper: ${
+          scrapeError instanceof Error ? scrapeError.message : String(scrapeError)
+        }`,
+      )
+    }
+  }
 }
 
 export async function resolveDefaultMeetupProvider(options?: ResolveDefaultMeetupProviderOptions): Promise<MeetupProvider> {
@@ -25,7 +43,7 @@ export async function resolveDefaultMeetupProvider(options?: ResolveDefaultMeetu
   }
 
   try {
-    const cache = await scrapeCodersMuMeetups()
+    const cache = await fetchLiveMeetupCache()
     await writeMeetupCache(cache)
     return new CacheMeetupProvider(cache)
   }
@@ -39,7 +57,7 @@ export async function resolveDefaultMeetupProvider(options?: ResolveDefaultMeetu
 }
 
 export async function refreshDefaultMeetupCache(): Promise<{ cache: MeetupCache, cacheFile: string }> {
-  const cache = await scrapeCodersMuMeetups()
+  const cache = await fetchLiveMeetupCache()
   const cacheFile = await writeMeetupCache(cache)
   return { cache, cacheFile }
 }
@@ -63,14 +81,17 @@ export async function getMeetupsForList(provider: MeetupProvider, state: MeetupL
     return getPastMeetups(provider)
   }
 
-  const upcomingMeetups = await getUpcomingMeetups(provider)
-
   if (state === 'all') {
     return [
-      ...upcomingMeetups,
+      ...await getUpcomingMeetups(provider),
       ...await getPastMeetups(provider),
     ]
   }
 
-  return upcomingMeetups
+  const now = Date.now()
+  return sortMeetupsAscending(await provider.listMeetups())
+    .filter((meetup) => {
+      const endsAt = getMeetupEndsAt(meetup)
+      return Boolean(endsAt && Date.parse(endsAt) >= now)
+    })
 }

@@ -1,3 +1,4 @@
+import { getMeetupEndsAt, getMeetupLinks, getMeetupLocationParts, getMeetupSlug, getMeetupStartsAt, getMeetupSummary } from './meetup-derived'
 import type { Meetup } from './types'
 
 function joinParts(parts: Array<string | undefined | null>): string {
@@ -18,22 +19,42 @@ function joinParts(parts: Array<string | undefined | null>): string {
 }
 
 export function buildCalendarUrls(meetup: Meetup): { google: string, outlook: string } {
+  const links = getMeetupLinks(meetup)
+  const summary = getMeetupSummary(meetup)
+  const startsAt = getMeetupStartsAt(meetup)
+  const endsAt = getMeetupEndsAt(meetup)
+  const locationParts = getMeetupLocationParts(meetup)
+
+  if (!startsAt || !endsAt) {
+    throw new Error(`Meetup ${getMeetupSlug(meetup)} does not have a valid schedule.`)
+  }
+
   const title = encodeURIComponent(meetup.title)
-  const detailsSource = meetup.links.meetup
-    ? `${meetup.summary}\n\nMore details: ${meetup.links.meetup}`
-    : meetup.summary
+  const detailsSource = links.meetup
+    ? `${summary}\n\nMore details: ${links.meetup}`
+    : summary
   const details = encodeURIComponent(detailsSource)
-  const location = encodeURIComponent(joinParts([meetup.location.name, meetup.location.address, meetup.location.city]))
-  const start = meetup.startsAt.replace(/[-:]/g, '').replace('.000', '')
-  const end = meetup.endsAt.replace(/[-:]/g, '').replace('.000', '')
+  const location = encodeURIComponent(joinParts([locationParts.name, locationParts.address, locationParts.city]))
+  const start = startsAt.replace(/[-:]/g, '').replace('.000', '')
+  const end = endsAt.replace(/[-:]/g, '').replace('.000', '')
 
   return {
     google: `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${start}/${end}&details=${details}&location=${location}`,
-    outlook: `https://outlook.live.com/calendar/0/deeplink/compose?subject=${title}&startdt=${encodeURIComponent(meetup.startsAt)}&enddt=${encodeURIComponent(meetup.endsAt)}&body=${details}&location=${location}`,
+    outlook: `https://outlook.live.com/calendar/0/deeplink/compose?subject=${title}&startdt=${encodeURIComponent(startsAt)}&enddt=${encodeURIComponent(endsAt)}&body=${details}&location=${location}`,
   }
 }
 
 export function buildIcs(meetup: Meetup): string {
+  const links = getMeetupLinks(meetup)
+  const summary = getMeetupSummary(meetup)
+  const startsAt = getMeetupStartsAt(meetup)
+  const endsAt = getMeetupEndsAt(meetup)
+  const locationParts = getMeetupLocationParts(meetup)
+
+  if (!startsAt || !endsAt) {
+    throw new Error(`Meetup ${getMeetupSlug(meetup)} does not have a valid schedule.`)
+  }
+
   const escape = (value: string): string => value
     .replaceAll('\\', '\\\\')
     .replaceAll(';', '\\;')
@@ -50,11 +71,11 @@ export function buildIcs(meetup: Meetup): string {
     'BEGIN:VEVENT',
     `UID:${meetup.id}@coders.mu`,
     `DTSTAMP:${toUtcStamp(new Date().toISOString())}`,
-    `DTSTART:${toUtcStamp(meetup.startsAt)}`,
-    `DTEND:${toUtcStamp(meetup.endsAt)}`,
+    `DTSTART:${toUtcStamp(startsAt)}`,
+    `DTEND:${toUtcStamp(endsAt)}`,
     `SUMMARY:${escape(meetup.title)}`,
-    `DESCRIPTION:${escape(meetup.links.meetup ? `${meetup.summary}\n\nMore details: ${meetup.links.meetup}` : meetup.summary)}`,
-    `LOCATION:${escape(joinParts([meetup.location.name, meetup.location.address, meetup.location.city]))}`,
+    `DESCRIPTION:${escape(links.meetup ? `${summary}\n\nMore details: ${links.meetup}` : summary)}`,
+    `LOCATION:${escape(joinParts([locationParts.name, locationParts.address, locationParts.city]))}`,
     'END:VEVENT',
     'END:VCALENDAR',
     '',

@@ -4,6 +4,13 @@ import { useState } from "react";
 import { MeetupDetail } from "./components/MeetupDetail";
 import { MeetupActions } from "./components/MeetupActions";
 import { MeetupListMetadata } from "./components/MeetupMetadata";
+import {
+  getMeetupLifecycleStatus,
+  getMeetupLocationParts,
+  getMeetupSlug,
+  getMeetupStartsAt,
+  getMeetupTimezone,
+} from "./lib/core";
 import { useMeetups } from "./lib/cmu";
 import {
   formatMeetupDay,
@@ -19,12 +26,16 @@ type FilterValue = "all" | "upcoming" | "past";
 function getMeetupAccessories(
   meetup: Parameters<typeof getMeetupStatusIcon>[0],
 ) {
+  const startsAt = getMeetupStartsAt(meetup);
+  const timezone = getMeetupTimezone(meetup);
+  const location = getMeetupLocationParts(meetup);
+  const lifecycleStatus = getMeetupLifecycleStatus(meetup);
   const accessories: List.Item.Accessory[] = [
     {
       tag: {
-        value: formatMeetupDay(meetup.startsAt, meetup.timezone),
+        value: startsAt ? formatMeetupDay(startsAt, timezone) : "TBA",
         color:
-          meetup.status === "completed"
+          lifecycleStatus === "completed"
             ? Color.SecondaryText
             : getMeetupStatusColor(meetup),
       },
@@ -36,8 +47,8 @@ function getMeetupAccessories(
     accessories.unshift({ text: audience });
   }
 
-  if (meetup.location.city) {
-    accessories.unshift({ text: meetup.location.city });
+  if (location.city ?? location.address) {
+    accessories.unshift({ text: location.city ?? location.address! });
   }
 
   return accessories;
@@ -48,12 +59,25 @@ export default function MeetupsCommand() {
   const [filter, setFilter] = useState<FilterValue>("all");
 
   const meetups = data ?? [];
-  const live = meetups.filter((meetup) => meetup.status === "ongoing");
-  const upcoming = meetups.filter(
-    (meetup) => meetup.status === "scheduled" || meetup.status === "postponed",
-  );
+  const isCanceled = (status: string) => {
+    const normalized = status.trim().toLowerCase();
+    return normalized === "canceled" || normalized === "cancelled";
+  };
+
+  const live = meetups.filter((meetup) => getMeetupLifecycleStatus(meetup) === "ongoing");
+  const upcoming = meetups.filter((meetup) => {
+    if (meetup.status.trim().toLowerCase() === "postponed") {
+      return true;
+    }
+    if (isCanceled(meetup.status)) {
+      return false;
+    }
+    return getMeetupLifecycleStatus(meetup) === "scheduled";
+  });
   const past = meetups.filter(
-    (meetup) => meetup.status === "completed" || meetup.status === "canceled",
+    (meetup) =>
+      isCanceled(meetup.status) ||
+      getMeetupLifecycleStatus(meetup) === "completed",
   );
   const visibleLive = filter === "past" ? [] : live;
   const visibleUpcoming = filter === "past" ? [] : upcoming;
@@ -92,7 +116,7 @@ export default function MeetupsCommand() {
             <List.Item
               key={meetup.id}
               title={meetup.title}
-              subtitle={meetup.slug}
+              subtitle={getMeetupSlug(meetup)}
               icon={getMeetupStatusIcon(meetup)}
               accessories={getMeetupAccessories(meetup)}
               keywords={meetupKeywords(meetup)}
@@ -125,7 +149,7 @@ export default function MeetupsCommand() {
             <List.Item
               key={meetup.id}
               title={meetup.title}
-              subtitle={meetup.slug}
+              subtitle={getMeetupSlug(meetup)}
               icon={getMeetupStatusIcon(meetup)}
               accessories={getMeetupAccessories(meetup)}
               keywords={meetupKeywords(meetup)}
@@ -155,7 +179,7 @@ export default function MeetupsCommand() {
             <List.Item
               key={meetup.id}
               title={meetup.title}
-              subtitle={meetup.slug}
+              subtitle={getMeetupSlug(meetup)}
               icon={getMeetupStatusIcon(meetup)}
               accessories={getMeetupAccessories(meetup)}
               keywords={meetupKeywords(meetup)}

@@ -8,14 +8,22 @@ import { parseArgs } from 'node:util'
 import {
   buildCalendarUrls,
   buildIcs,
-  createMeetupListResponse,
-  createMeetupResponse,
-  createNextMeetupResponse,
-  fetchMeetupBySelector,
-  fetchMeetupList,
+  getMeetup,
+  getMeetupEndsAt,
+  getMeetupLifecycleStatus,
+  getMeetupLinks,
+  getMeetupLocationParts,
+  getMeetupSlug,
+  getMeetupSpeakerNames,
+  getMeetupStartsAt,
+  getMeetupSummary,
+  getMeetupTimezone,
+  getMeetupsForList,
   refreshDefaultMeetupCache,
+  resolveDefaultMeetupProvider,
+  sortMeetupsAscending,
 } from '@codersmu/core'
-import type { DefaultMeetupQueryOptions, Meetup, MeetupListState, MeetupSession, MeetupSpeaker } from '@codersmu/core'
+import type { Meetup, MeetupListState, MeetupProvider, MeetupSession, MeetupSpeaker } from '@codersmu/core'
 
 const require = createRequire(import.meta.url)
 const { version: CLI_VERSION } = require('../package.json') as { version: string }
@@ -47,11 +55,11 @@ function colorize(color: keyof typeof COLORS, value: string): string {
   return `${COLORS[color]}${value}${COLORS.reset}`
 }
 
-function getDefaultMeetupQueryOptions(options: CliOptions): DefaultMeetupQueryOptions {
-  return {
+async function resolveMeetupProvider(options: CliOptions): Promise<MeetupProvider> {
+  return resolveDefaultMeetupProvider({
     forceRefresh: options.refresh,
     allowStaleOnError: !options.refresh,
-  }
+  })
 }
 
 function renderVersion(): void {
@@ -86,24 +94,32 @@ function formatMeetupDay(value: string, timezone: string): string {
 }
 
 function formatMeetupRange(meetup: Meetup): string {
-  const endDate = new Date(meetup.endsAt)
-  const startDate = new Date(meetup.startsAt)
+  const startsAt = getMeetupStartsAt(meetup)
+  const endsAt = getMeetupEndsAt(meetup)
+  const timezone = getMeetupTimezone(meetup)
+
+  if (!startsAt || !endsAt) {
+    return 'Date TBA'
+  }
+
+  const endDate = new Date(endsAt)
+  const startDate = new Date(startsAt)
   const sameLocalDay = new Intl.DateTimeFormat('en-CA', {
     dateStyle: 'short',
-    timeZone: meetup.timezone,
+    timeZone: timezone,
   }).format(startDate) === new Intl.DateTimeFormat('en-CA', {
     dateStyle: 'short',
-    timeZone: meetup.timezone,
+    timeZone: timezone,
   }).format(endDate)
 
   const endLabel = sameLocalDay
     ? new Intl.DateTimeFormat('en-MU', {
         timeStyle: 'short',
-        timeZone: meetup.timezone,
+        timeZone: timezone,
       }).format(endDate)
-    : formatMeetupDate(meetup.endsAt, meetup.timezone)
+    : formatMeetupDate(endsAt, timezone)
 
-  return `${formatMeetupDate(meetup.startsAt, meetup.timezone)} to ${endLabel}`
+  return `${formatMeetupDate(startsAt, timezone)} to ${endLabel}`
 }
 
 function wrapText(value: string, width = 72): string[] {
@@ -158,17 +174,22 @@ function printBlock(title: string, lines: string[]): void {
 }
 
 function renderMeetupCard(meetup: Meetup): void {
+  const location = getMeetupLocationParts(meetup)
   console.log(colorize('bold', meetup.title))
-  console.log(colorize('cyan', meetup.slug))
+  console.log(colorize('cyan', getMeetupSlug(meetup)))
   console.log(formatMeetupRange(meetup))
-  console.log(joinParts([meetup.location.name, meetup.location.address, meetup.location.city]) || 'Location TBA')
-  console.log(colorize('dim', meetup.summary))
+  console.log(joinParts([location.name, location.address, location.city]) || 'Location TBA')
+  console.log(colorize('dim', getMeetupSummary(meetup)))
   console.log()
 }
 
 function renderMeetupShortLine(meetup: Meetup): void {
-  const location = joinParts([meetup.location.name, meetup.location.city]) || meetup.location.name || 'TBA'
-  console.log(`${formatMeetupDay(meetup.startsAt, meetup.timezone)}  ${meetup.title}  (${meetup.slug})  ${location}`)
+  const startsAt = getMeetupStartsAt(meetup)
+  const timezone = getMeetupTimezone(meetup)
+  const location = getMeetupLocationParts(meetup)
+  const locationLabel = joinParts([location.name, location.city]) || location.name || location.address || 'TBA'
+  const dayLabel = startsAt ? formatMeetupDay(startsAt, timezone) : 'TBA'
+  console.log(`${dayLabel}  ${meetup.title}  (${getMeetupSlug(meetup)})  ${locationLabel}`)
 }
 
 function renderSession(session: MeetupSession): string {
@@ -181,28 +202,33 @@ function renderSpeaker(speaker: MeetupSpeaker): string {
 }
 
 function renderMeetupDetail(meetup: Meetup): void {
-  const calendar = buildCalendarUrls(meetup)
+  const startsAt = getMeetupStartsAt(meetup)
+  const endsAt = getMeetupEndsAt(meetup)
+  const calendar = startsAt && endsAt ? buildCalendarUrls(meetup) : null
+  const location = getMeetupLocationParts(meetup)
+  const links = getMeetupLinks(meetup)
+  const speakerNames = getMeetupSpeakerNames(meetup)
   const infoLines = [
-    colorize('cyan', meetup.slug),
+    colorize('cyan', getMeetupSlug(meetup)),
     `${colorize('yellow', 'When')}  ${formatMeetupRange(meetup)}`,
-    `${colorize('yellow', 'Where')} ${joinParts([meetup.location.name, meetup.location.address, meetup.location.city]) || 'TBA'}`,
+    `${colorize('yellow', 'Where')} ${joinParts([location.name, location.address, location.city]) || 'TBA'}`,
   ]
 
   if (typeof meetup.seatsAvailable === 'number') {
     infoLines.push(`${colorize('yellow', 'Seats')} ${meetup.seatsAvailable} available`)
   }
-  else if (typeof meetup.rsvpCount === 'number' && meetup.rsvpCount > 0) {
-    infoLines.push(`${colorize('yellow', 'RSVPs')} ${meetup.rsvpCount}`)
+  else if (typeof meetup.attendeeCount === 'number' && meetup.attendeeCount > 0) {
+    infoLines.push(`${colorize('yellow', 'Attendees')} ${meetup.attendeeCount}`)
   }
 
   printBlock(meetup.title, infoLines)
-  printBlock('Summary', wrapText(meetup.summary))
+  printBlock('Summary', wrapText(getMeetupSummary(meetup)))
 
   if (meetup.sessions.length) {
     printBlock('Sessions', meetup.sessions.map(renderSession))
   }
-  else if (meetup.speakers.length) {
-    printBlock('Speakers', meetup.speakers.map(renderSpeaker))
+  else if (speakerNames.length) {
+    printBlock('Speakers', speakerNames.map((speaker) => `- ${speaker}`))
   }
 
   if (meetup.sponsors.length) {
@@ -210,18 +236,20 @@ function renderMeetupDetail(meetup: Meetup): void {
   }
 
   printBlock('Links', [
-    meetup.links.meetup ? `Meetup page: ${meetup.links.meetup}` : 'Meetup page: n/a',
-    meetup.links.rsvp ? `RSVP:        ${meetup.links.rsvp}` : meetup.acceptingRsvp ? 'RSVP:        Open on the website' : 'RSVP:        n/a',
-    meetup.links.recording ? `Recording:   ${meetup.links.recording}` : 'Recording:   n/a',
-    meetup.links.slides ? `Slides:      ${meetup.links.slides}` : 'Slides:      n/a',
-    meetup.links.map ? `Map:         ${meetup.links.map}` : 'Map:         n/a',
-    meetup.links.parking ? `Parking:     ${meetup.links.parking}` : 'Parking:     n/a',
+    `Meetup page: ${links.meetup}`,
+    links.rsvp ? `RSVP:        ${links.rsvp}` : meetup.acceptingRsvp ? 'RSVP:        Open on the website' : 'RSVP:        n/a',
+    'Recording:   n/a',
+    'Slides:      n/a',
+    links.map ? `Map:         ${links.map}` : 'Map:         n/a',
+    links.parking ? `Parking:     ${links.parking}` : 'Parking:     n/a',
   ])
 
-  printBlock('Add To Calendar', [
+  printBlock('Add To Calendar', calendar ? [
     `Google:  ${calendar.google}`,
     `Outlook: ${calendar.outlook}`,
     'ICS:     run `codersmu calendar <slug> --write ./event.ics`',
+  ] : [
+    'Calendar links are unavailable until the meetup schedule is published.',
   ])
 }
 
@@ -289,9 +317,8 @@ function parseLimit(value?: string): number | undefined {
 
 async function handleCacheRefresh(options: CliOptions): Promise<void> {
   const { cache, cacheFile } = await refreshDefaultMeetupCache()
-  const nextMeetup = [...cache.meetups]
-    .sort((left, right) => Date.parse(left.startsAt) - Date.parse(right.startsAt))
-    .find((meetup) => Date.parse(meetup.endsAt) >= Date.now())
+  const nextMeetup = sortMeetupsAscending(cache.meetups)
+    .find((meetup) => getMeetupLifecycleStatus(meetup) !== 'completed')
 
   const payload = {
     scrapedAt: cache.scrapedAt,
@@ -300,8 +327,8 @@ async function handleCacheRefresh(options: CliOptions): Promise<void> {
     meetupCount: cache.meetups.length,
     nextMeetup: nextMeetup ? {
       title: nextMeetup.title,
-      slug: nextMeetup.slug,
-      startsAt: nextMeetup.startsAt,
+      slug: getMeetupSlug(nextMeetup),
+      startsAt: getMeetupStartsAt(nextMeetup),
     } : null,
   }
 
@@ -315,18 +342,19 @@ async function handleCacheRefresh(options: CliOptions): Promise<void> {
     `Scraped at: ${cache.scrapedAt}`,
     `Meetups:    ${cache.meetups.length}`,
     `Cache:      ${cacheFile}`,
-    nextMeetup ? `Next:       ${nextMeetup.title} (${nextMeetup.slug})` : 'Next:       none',
+    nextMeetup ? `Next:       ${nextMeetup.title} (${getMeetupSlug(nextMeetup)})` : 'Next:       none',
   ])
 }
 
 async function handleMeetupList(options: CliOptions): Promise<void> {
+  const provider = await resolveMeetupProvider(options)
   const state = parseMeetupListState(options.state)
   const limit = parseLimit(options.limit)
-  const meetups = await fetchMeetupList(state, getDefaultMeetupQueryOptions(options))
+  const meetups = await getMeetupsForList(provider, state)
   const limitedMeetups = typeof limit === 'number' ? meetups.slice(0, limit) : meetups
 
   if (options.json) {
-    renderJson(createMeetupListResponse(limitedMeetups))
+    renderJson(limitedMeetups)
     return
   }
 
@@ -357,27 +385,16 @@ async function handleMeetupList(options: CliOptions): Promise<void> {
 }
 
 async function handleMeetupView(selector: string, options: CliOptions): Promise<void> {
-  const meetup = await fetchMeetupBySelector(selector, getDefaultMeetupQueryOptions(options))
-  const isNextSelector = selector === 'next' || selector === 'current'
-
+  const provider = await resolveMeetupProvider(options)
+  const meetup = await getMeetup(provider, selector)
   if (!meetup) {
-    if (options.json && isNextSelector) {
-      renderJson(createNextMeetupResponse(undefined))
-      return
-    }
-
     console.error(getMeetupNotFoundMessage(selector))
     process.exitCode = 1
     return
   }
 
   if (options.json) {
-    if (isNextSelector) {
-      renderJson(createNextMeetupResponse(meetup))
-      return
-    }
-
-    renderJson(createMeetupResponse(meetup))
+    renderJson(meetup)
     return
   }
 
@@ -390,15 +407,34 @@ async function handleMeetupView(selector: string, options: CliOptions): Promise<
 }
 
 async function handleMeetupCalendar(selector: string, options: CliOptions): Promise<void> {
-  const meetup = await fetchMeetupBySelector(selector, getDefaultMeetupQueryOptions(options))
+  const provider = await resolveMeetupProvider(options)
+  const meetup = await getMeetup(provider, selector)
   if (!meetup) {
     console.error(getMeetupNotFoundMessage(selector))
     process.exitCode = 1
     return
   }
 
+  const startsAt = getMeetupStartsAt(meetup)
+  const endsAt = getMeetupEndsAt(meetup)
+  if (!startsAt || !endsAt) {
+    const payload = {
+      meetup: getMeetupSlug(meetup),
+      available: false,
+      reason: 'Calendar links are unavailable until the meetup schedule is published.',
+    }
+
+    if (options.json) {
+      renderJson(payload)
+    } else {
+      console.error(payload.reason)
+      process.exitCode = 1
+    }
+    return
+  }
+
   const payload = {
-    meetup: meetup.slug,
+    meetup: getMeetupSlug(meetup),
     ...buildCalendarUrls(meetup),
   }
 

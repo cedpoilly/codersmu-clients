@@ -1,7 +1,15 @@
-import { Action, ActionPanel, Icon, Keyboard } from "@raycast/api";
+import { Action, ActionPanel, Clipboard, Icon } from "@raycast/api";
 import type { ReactNode } from "react";
 
-import { buildCalendarUrls, buildIcs, type Meetup } from "../lib/core";
+import {
+  buildCalendarUrls,
+  buildIcs,
+  getMeetupLinks,
+  getMeetupSlug,
+  getMeetupSummary,
+  type Meetup,
+} from "../lib/core";
+import { meetupHasCalendarSchedule } from "../lib/format";
 
 interface MeetupActionsProps {
   meetup: Meetup;
@@ -14,7 +22,10 @@ export function MeetupActions({
   onRefresh,
   detailTarget,
 }: MeetupActionsProps) {
-  const calendar = buildCalendarUrls(meetup);
+  const calendar = meetupHasCalendarSchedule(meetup)
+    ? buildCalendarUrls(meetup)
+    : null;
+  const links = getMeetupLinks(meetup);
 
   return (
     <ActionPanel>
@@ -26,82 +37,72 @@ export function MeetupActions({
         />
       ) : null}
       <ActionPanel.Section title="Open">
-        {meetup.links.meetup ? (
+        {links.meetup ? (
           <Action.OpenInBrowser
             title="Open Meetup Page"
-            url={meetup.links.meetup}
+            url={links.meetup}
           />
         ) : null}
-        {meetup.links.rsvp ? (
-          <Action.OpenInBrowser title="Open RSVP" url={meetup.links.rsvp} />
+        {links.rsvp ? (
+          <Action.OpenInBrowser title="Open RSVP" url={links.rsvp} />
         ) : null}
-        {meetup.links.recording ? (
+        {links.map ? (
+          <Action.OpenInBrowser title="Open Map" url={links.map} />
+        ) : null}
+        {links.parking ? (
+          <Action.OpenInBrowser title="Open Parking" url={links.parking} />
+        ) : null}
+        {calendar ? (
           <Action.OpenInBrowser
-            title="Open Recording"
-            url={meetup.links.recording}
+            title="Add to Google Calendar"
+            url={calendar.google}
+            icon={Icon.Calendar}
           />
         ) : null}
-        {meetup.links.slides ? (
-          <Action.OpenInBrowser title="Open Slides" url={meetup.links.slides} />
-        ) : null}
-        {meetup.links.map ? (
-          <Action.OpenInBrowser title="Open Map" url={meetup.links.map} />
-        ) : null}
-        {meetup.links.parking ? (
+        {calendar ? (
           <Action.OpenInBrowser
-            title="Open Parking"
-            url={meetup.links.parking}
+            title="Add to Outlook Calendar"
+            url={calendar.outlook}
+            icon={Icon.Calendar}
           />
         ) : null}
-        <Action.OpenInBrowser
-          title="Add to Google Calendar"
-          url={calendar.google}
-          icon={Icon.Calendar}
-          shortcut={{ modifiers: ["cmd", "shift"], key: "g" }}
-        />
-        <Action.OpenInBrowser
-          title="Add to Outlook Calendar"
-          url={calendar.outlook}
-          icon={Icon.Calendar}
-          shortcut={{ modifiers: ["cmd", "shift"], key: "o" }}
-        />
       </ActionPanel.Section>
       <ActionPanel.Section title="Copy">
-        <Action.CopyToClipboard title="Copy Slug" content={meetup.slug} />
-        {meetup.links.meetup ? (
+        <Action.CopyToClipboard title="Copy Slug" content={getMeetupSlug(meetup)} />
+        {links.meetup ? (
           <Action.CopyToClipboard
             title="Copy Meetup URL"
-            content={meetup.links.meetup}
+            content={links.meetup}
           />
         ) : null}
-        {meetup.links.rsvp ? (
+        {links.rsvp ? (
           <Action.CopyToClipboard
             title="Copy RSVP URL"
-            content={meetup.links.rsvp}
+            content={links.rsvp}
           />
         ) : null}
-        {meetup.links.recording ? (
+        {calendar ? (
           <Action.CopyToClipboard
-            title="Copy Recording URL"
-            content={meetup.links.recording}
+            title="Copy Google Calendar URL"
+            content={calendar.google}
           />
         ) : null}
-        {meetup.links.slides ? (
+        {calendar ? (
           <Action.CopyToClipboard
-            title="Copy Slides URL"
-            content={meetup.links.slides}
+            title="Copy Outlook Calendar URL"
+            content={calendar.outlook}
           />
         ) : null}
-        <Action.CopyToClipboard
-          title="Copy Google Calendar URL"
-          content={calendar.google}
+        {calendar ? (
+          <Action.CopyToClipboard title="Copy ICS" content={buildIcs(meetup)} />
+        ) : null}
+        <Action
+          title="Copy Summary"
+          icon={Icon.Clipboard}
+          onAction={async () => {
+            await Clipboard.copy(getMeetupSummary(meetup));
+          }}
         />
-        <Action.CopyToClipboard
-          title="Copy Outlook Calendar URL"
-          content={calendar.outlook}
-        />
-        <Action.CopyToClipboard title="Copy ICS" content={buildIcs(meetup)} />
-        <Action.CopyToClipboard title="Copy Summary" content={meetup.summary} />
       </ActionPanel.Section>
       {onRefresh ? (
         <ActionPanel.Section title="Data">
@@ -109,7 +110,6 @@ export function MeetupActions({
             title="Refresh"
             onAction={onRefresh}
             icon={Icon.ArrowClockwise}
-            shortcut={Keyboard.Shortcut.Common.Refresh}
           />
         </ActionPanel.Section>
       ) : null}

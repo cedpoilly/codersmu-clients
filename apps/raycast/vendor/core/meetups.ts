@@ -1,7 +1,12 @@
+import { getMeetupEndsAt, getMeetupLifecycleStatus, getMeetupSlug, getMeetupSortTimestamp } from './meetup-derived'
 import type { Meetup, MeetupProvider } from './types'
 
-function compareAsc(left: Meetup, right: Meetup): number {
-  return Date.parse(left.startsAt) - Date.parse(right.startsAt)
+export function compareMeetupsAscending(left: Meetup, right: Meetup): number {
+  return getMeetupSortTimestamp(left) - getMeetupSortTimestamp(right)
+}
+
+export function sortMeetupsAscending(meetups: Meetup[]): Meetup[] {
+  return [...meetups].sort(compareMeetupsAscending)
 }
 
 function nowUtc(): number {
@@ -9,22 +14,25 @@ function nowUtc(): number {
 }
 
 export function isPastMeetup(meetup: Meetup, now = nowUtc()): boolean {
+  const endsAt = getMeetupEndsAt(meetup)
+  const rawStatus = meetup.status.trim().toLowerCase()
   return (
-    Date.parse(meetup.endsAt) < now
-    || meetup.status === 'completed'
-    || meetup.status === 'canceled'
+    rawStatus === 'canceled'
+    || rawStatus === 'cancelled'
+    || Boolean(endsAt && Date.parse(endsAt) < now)
+    || getMeetupLifecycleStatus(meetup) === 'completed'
   )
 }
 
 export async function getSortedMeetups(provider: MeetupProvider): Promise<Meetup[]> {
-  return [...await provider.listMeetups()].sort(compareAsc)
+  return sortMeetupsAscending(await provider.listMeetups())
 }
 
 export async function getCurrentOrNextMeetup(provider: MeetupProvider): Promise<Meetup | undefined> {
   const meetups = await getSortedMeetups(provider)
   const now = nowUtc()
 
-  return meetups.find((meetup) => meetup.status !== 'canceled' && Date.parse(meetup.endsAt) >= now)
+  return meetups.find((meetup) => !isPastMeetup(meetup, now))
 }
 
 export async function getUpcomingMeetups(provider: MeetupProvider): Promise<Meetup[]> {
@@ -53,5 +61,11 @@ export async function getMeetup(provider: MeetupProvider, slugOrKeyword: string)
     return getPreviousMeetup(provider)
   }
 
-  return provider.getMeetupBySlug(slugOrKeyword)
+  const meetup = await provider.getMeetupBySlug(slugOrKeyword)
+  if (meetup) {
+    return meetup
+  }
+
+  const meetups = await provider.listMeetups()
+  return meetups.find((candidate) => getMeetupSlug(candidate) === slugOrKeyword || candidate.id === slugOrKeyword)
 }

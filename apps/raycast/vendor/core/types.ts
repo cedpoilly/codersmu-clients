@@ -1,14 +1,57 @@
-import type { Meetup } from '@codersmu/contracts'
+export interface MeetupSpeaker {
+  id: string
+  name: string
+  githubUsername?: string | null
+  avatarUrl?: string | null
+  featured?: number | null
+}
 
-export type {
-  Meetup,
-  MeetupLinks,
-  MeetupLocation,
-  MeetupSession,
-  MeetupSpeaker,
-  MeetupSponsor,
-  MeetupStatus,
-} from '@codersmu/contracts'
+export interface MeetupSession {
+  id: string
+  title: string
+  description?: string | null
+  order?: number | null
+  speakers: MeetupSpeaker[]
+}
+
+export interface MeetupSponsor {
+  id: string
+  name: string
+  website?: string | null
+  logoUrl?: string | null
+  sponsorTypes: string[]
+  logoBg?: string | null
+  status?: string | null
+}
+
+export interface MeetupPhoto {
+  [key: string]: unknown
+}
+
+export interface Meetup {
+  id: string
+  title: string
+  description?: string | null
+  date: string | null
+  startTime?: string | null
+  endTime?: string | null
+  venue?: string | null
+  location?: string | null
+  status: string
+  album?: string | null
+  updatedAt?: string | null
+  coverImageUrl?: string | null
+  photos: MeetupPhoto[]
+  sessions: MeetupSession[]
+  sponsors: MeetupSponsor[]
+  attendeeCount?: number
+  seatsAvailable?: number | null
+  acceptingRsvp?: number | null
+  rsvpClosingDate?: string | null
+  rsvpLink?: string | null
+  mapUrl?: string | null
+  parkingLocation?: string | null
+}
 
 export interface MeetupCache {
   source: string

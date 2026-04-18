@@ -35,6 +35,10 @@ struct MeetupSnapshot: Codable, Equatable, Identifiable {
     slug
   }
 
+  var changeIdentity: String {
+    meetupURL.absoluteString.lowercased()
+  }
+
   var locationDescription: String? {
     let components = [venueName?.trimmedNilIfEmpty, venueAddress?.trimmedNilIfEmpty].compactMap { $0 }
     return components.isEmpty ? nil : components.joined(separator: ", ")

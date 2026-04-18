@@ -1,6 +1,17 @@
 import { Color, Icon } from "@raycast/api";
 
-import type { Meetup } from "./core";
+import {
+  getMeetupEndsAt,
+  getMeetupLifecycleStatus,
+  getMeetupLinks,
+  getMeetupLocationParts,
+  getMeetupSlug,
+  getMeetupSpeakerNames as getCoreMeetupSpeakerNames,
+  getMeetupStartsAt,
+  getMeetupSummary,
+  getMeetupTimezone,
+  type Meetup,
+} from "./core";
 
 function joinParts(parts: Array<string | undefined | null>): string {
   return parts
@@ -27,63 +38,83 @@ export function formatMeetupDay(value: string, timezone: string): string {
 }
 
 export function formatMeetupRange(meetup: Meetup): string {
-  const start = new Date(meetup.startsAt);
-  const end = new Date(meetup.endsAt);
+  const startValue = getMeetupStartsAt(meetup);
+  const endValue = getMeetupEndsAt(meetup);
+  if (!startValue || !endValue) {
+    return "Date TBA";
+  }
+
+  const start = new Date(startValue);
+  const end = new Date(endValue);
+  const timezone = getMeetupTimezone(meetup);
   const sameDay =
     new Intl.DateTimeFormat("en-CA", {
       dateStyle: "short",
-      timeZone: meetup.timezone,
+      timeZone: timezone,
     }).format(start) ===
     new Intl.DateTimeFormat("en-CA", {
       dateStyle: "short",
-      timeZone: meetup.timezone,
+      timeZone: timezone,
     }).format(end);
 
   const endLabel = sameDay
     ? new Intl.DateTimeFormat("en-MU", {
         timeStyle: "short",
-        timeZone: meetup.timezone,
+        timeZone: timezone,
       }).format(end)
-    : formatDate(meetup.endsAt, meetup.timezone);
+    : formatDate(endValue, timezone);
 
-  return `${formatDate(meetup.startsAt, meetup.timezone)} to ${endLabel}`;
+  return `${formatDate(startValue, timezone)} to ${endLabel}`;
+}
+
+export function meetupHasCalendarSchedule(meetup: Meetup): boolean {
+  return Boolean(getMeetupStartsAt(meetup) && getMeetupEndsAt(meetup));
 }
 
 export function formatMeetupLocation(meetup: Meetup): string {
+  const location = getMeetupLocationParts(meetup);
   return (
     joinParts([
-      meetup.location.name,
-      meetup.location.address,
-      meetup.location.city,
+      location.name,
+      location.address,
+      location.city,
     ]) || "TBA"
   );
 }
 
 export function getMeetupStatusLabel(meetup: Meetup): string {
-  switch (meetup.status) {
+  const rawStatus = meetup.status.trim().toLowerCase();
+  if (rawStatus === "postponed") {
+    return "Postponed";
+  }
+  if (rawStatus === "canceled" || rawStatus === "cancelled") {
+    return "Canceled";
+  }
+
+  switch (getMeetupLifecycleStatus(meetup)) {
     case "ongoing":
       return "Live";
     case "completed":
       return "Past";
-    case "postponed":
-      return "Postponed";
-    case "canceled":
-      return "Canceled";
     default:
       return "Upcoming";
   }
 }
 
 export function getMeetupStatusColor(meetup: Meetup): Color {
-  switch (meetup.status) {
+  const rawStatus = meetup.status.trim().toLowerCase();
+  if (rawStatus === "postponed") {
+    return Color.Yellow;
+  }
+  if (rawStatus === "canceled" || rawStatus === "cancelled") {
+    return Color.Red;
+  }
+
+  switch (getMeetupLifecycleStatus(meetup)) {
     case "ongoing":
       return Color.Green;
     case "completed":
       return Color.SecondaryText;
-    case "postponed":
-      return Color.Yellow;
-    case "canceled":
-      return Color.Red;
     default:
       return Color.Blue;
   }
@@ -101,10 +132,6 @@ export function getMeetupAudienceLabel(meetup: Meetup): string | undefined {
     return `${meetup.seatsAvailable} seats available`;
   }
 
-  if (typeof meetup.rsvpCount === "number" && meetup.rsvpCount > 0) {
-    return `${meetup.rsvpCount} RSVPs`;
-  }
-
   if (typeof meetup.attendeeCount === "number" && meetup.attendeeCount > 0) {
     return `${meetup.attendeeCount} attendees`;
   }
@@ -113,41 +140,41 @@ export function getMeetupAudienceLabel(meetup: Meetup): string | undefined {
 }
 
 export function getMeetupSpeakerNames(meetup: Meetup): string[] {
-  const names = meetup.sessions.length
-    ? meetup.sessions.flatMap((session) =>
-        session.speakers.map((speaker) => speaker.name),
-      )
-    : meetup.speakers.map((speaker) => speaker.name);
-
-  return [...new Set(names)];
+  return getCoreMeetupSpeakerNames(meetup);
 }
 
 export function getMeetupTagNames(meetup: Meetup): string[] {
-  return meetup.tags?.filter(Boolean) ?? [];
+  void meetup;
+  return [];
 }
 
 export function meetupKeywords(meetup: Meetup): string[] {
+  const location = getMeetupLocationParts(meetup);
   return [
-    meetup.slug,
+    getMeetupSlug(meetup),
     meetup.title,
     meetup.status,
-    meetup.location.name,
-    meetup.location.address,
-    meetup.location.city,
-    ...getMeetupTagNames(meetup),
-    ...meetup.speakers.map((speaker) => speaker.name),
+    location.name,
+    location.address,
+    location.city,
     ...meetup.sponsors.map((sponsor) => sponsor.name),
+    ...getMeetupSpeakerNames(meetup),
     ...meetup.sessions.map((session) => session.title),
   ].filter(Boolean) as string[];
 }
 
 export function renderMeetupMarkdown(meetup: Meetup): string {
+  const links = getMeetupLinks(meetup);
   const lines: string[] = [
     `# ${meetup.title}`,
     "",
-    `**${getMeetupStatusLabel(meetup)}** · ${formatMeetupDay(meetup.startsAt, meetup.timezone)}`,
+    `**${getMeetupStatusLabel(meetup)}**`,
     "",
-    meetup.summary,
+    formatMeetupRange(meetup),
+    "",
+    formatMeetupLocation(meetup),
+    "",
+    getMeetupSummary(meetup),
     "",
     "## When",
     "",
@@ -171,12 +198,10 @@ export function renderMeetupMarkdown(meetup: Meetup): string {
         lines.push(`  ${session.description}`);
       }
     }
-  } else if (meetup.speakers.length) {
+  } else if (getMeetupSpeakerNames(meetup).length) {
     lines.push("", "## Speakers", "");
-    for (const speaker of meetup.speakers) {
-      lines.push(
-        `- ${speaker.name}${speaker.githubUsername ? ` (@${speaker.githubUsername})` : ""}`,
-      );
+    for (const speaker of getMeetupSpeakerNames(meetup)) {
+      lines.push(`- ${speaker}`);
     }
   }
 
@@ -189,39 +214,19 @@ export function renderMeetupMarkdown(meetup: Meetup): string {
     }
   }
 
-  if (getMeetupTagNames(meetup).length) {
-    lines.push("", "## Tags", "");
-    for (const tag of getMeetupTagNames(meetup)) {
-      lines.push(`- ${tag}`);
-    }
-  }
-
-  if (
-    meetup.links.meetup ||
-    meetup.links.rsvp ||
-    meetup.links.recording ||
-    meetup.links.slides ||
-    meetup.links.map ||
-    meetup.links.parking
-  ) {
+  if (links.meetup || links.rsvp || links.map || links.parking) {
     lines.push("", "## Links", "");
-    if (meetup.links.meetup) {
-      lines.push(`- [Meetup Page](${meetup.links.meetup})`);
+    if (links.meetup) {
+      lines.push(`- [Meetup Page](${links.meetup})`);
     }
-    if (meetup.links.rsvp) {
-      lines.push(`- [RSVP](${meetup.links.rsvp})`);
+    if (links.rsvp) {
+      lines.push(`- [RSVP](${links.rsvp})`);
     }
-    if (meetup.links.recording) {
-      lines.push(`- [Recording](${meetup.links.recording})`);
+    if (links.map) {
+      lines.push(`- [Map](${links.map})`);
     }
-    if (meetup.links.slides) {
-      lines.push(`- [Slides](${meetup.links.slides})`);
-    }
-    if (meetup.links.map) {
-      lines.push(`- [Map](${meetup.links.map})`);
-    }
-    if (meetup.links.parking) {
-      lines.push(`- [Parking](${meetup.links.parking})`);
+    if (links.parking) {
+      lines.push(`- [Parking](${links.parking})`);
     }
   }
 

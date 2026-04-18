@@ -1,16 +1,15 @@
 import { Color, Detail, List } from "@raycast/api";
+import { getMeetupLinks, getMeetupSlug, type Meetup } from "../lib/core";
 
 import {
   formatMeetupLocation,
   formatMeetupRange,
   getMeetupAudienceLabel,
   getMeetupSpeakerNames,
-  getMeetupTagNames,
   getMeetupStatusColor,
   getMeetupStatusIcon,
   getMeetupStatusLabel,
 } from "../lib/format";
-import type { Meetup } from "../lib/core";
 
 function renderStatusTag(meetup: Meetup) {
   return (
@@ -121,50 +120,9 @@ function renderSponsorTagsForList(meetup: Meetup) {
   );
 }
 
-function renderTagTagsForDetail(meetup: Meetup) {
-  const tags = getMeetupTagNames(meetup);
-  if (!tags.length) {
-    return null;
-  }
-
-  return (
-    <Detail.Metadata.TagList title="Tags">
-      {tags.slice(0, 4).map((tag) => (
-        <Detail.Metadata.TagList.Item key={tag} text={tag} />
-      ))}
-      {tags.length > 4 ? (
-        <Detail.Metadata.TagList.Item
-          text={`+${tags.length - 4} more`}
-          color={Color.SecondaryText}
-        />
-      ) : null}
-    </Detail.Metadata.TagList>
-  );
-}
-
-function renderTagTagsForList(meetup: Meetup) {
-  const tags = getMeetupTagNames(meetup);
-  if (!tags.length) {
-    return null;
-  }
-
-  return (
-    <List.Item.Detail.Metadata.TagList title="Tags">
-      {tags.slice(0, 4).map((tag) => (
-        <List.Item.Detail.Metadata.TagList.Item key={tag} text={tag} />
-      ))}
-      {tags.length > 4 ? (
-        <List.Item.Detail.Metadata.TagList.Item
-          text={`+${tags.length - 4} more`}
-          color={Color.SecondaryText}
-        />
-      ) : null}
-    </List.Item.Detail.Metadata.TagList>
-  );
-}
-
 export function MeetupDetailMetadata({ meetup }: { meetup: Meetup }) {
   const audience = getMeetupAudienceLabel(meetup);
+  const links = getMeetupLinks(meetup);
 
   return (
     <Detail.Metadata>
@@ -177,52 +135,37 @@ export function MeetupDetailMetadata({ meetup }: { meetup: Meetup }) {
       {audience ? (
         <Detail.Metadata.Label title="Attendance" text={audience} />
       ) : null}
-      <Detail.Metadata.Label title="Slug" text={meetup.slug} />
+      <Detail.Metadata.Label title="Slug" text={getMeetupSlug(meetup)} />
       <Detail.Metadata.Separator />
       {renderSpeakerTagsForDetail(meetup)}
       {renderSponsorTagsForDetail(meetup)}
-      {renderTagTagsForDetail(meetup)}
-      {meetup.links.meetup ? (
+      {links.meetup ? (
         <Detail.Metadata.Link
           title="Meetup Page"
-          target={meetup.links.meetup}
+          target={links.meetup}
           text="Open"
         />
       ) : null}
-      {meetup.links.rsvp ? (
+      {links.rsvp ? (
         <Detail.Metadata.Link
           title="RSVP"
-          target={meetup.links.rsvp}
+          target={links.rsvp}
           text="Open"
         />
       ) : meetup.acceptingRsvp ? (
         <Detail.Metadata.Label title="RSVP" text="Open on website" />
       ) : null}
-      {meetup.links.recording ? (
-        <Detail.Metadata.Link
-          title="Recording"
-          target={meetup.links.recording}
-          text="Open"
-        />
-      ) : null}
-      {meetup.links.slides ? (
-        <Detail.Metadata.Link
-          title="Slides"
-          target={meetup.links.slides}
-          text="Open"
-        />
-      ) : null}
-      {meetup.links.map ? (
+      {links.map ? (
         <Detail.Metadata.Link
           title="Map"
-          target={meetup.links.map}
+          target={links.map}
           text="Open"
         />
       ) : null}
-      {meetup.links.parking ? (
+      {links.parking ? (
         <Detail.Metadata.Link
           title="Parking"
-          target={meetup.links.parking}
+          target={links.parking}
           text="Open"
         />
       ) : null}
@@ -232,6 +175,7 @@ export function MeetupDetailMetadata({ meetup }: { meetup: Meetup }) {
 
 export function MeetupListMetadata({ meetup }: { meetup: Meetup }) {
   const audience = getMeetupAudienceLabel(meetup);
+  const links = getMeetupLinks(meetup);
 
   return (
     <List.Item.Detail.Metadata>
@@ -247,33 +191,18 @@ export function MeetupListMetadata({ meetup }: { meetup: Meetup }) {
       {audience ? (
         <List.Item.Detail.Metadata.Label title="Attendance" text={audience} />
       ) : null}
-      {meetup.links.rsvp ? (
+      {links.rsvp ? (
         <List.Item.Detail.Metadata.Link
           title="RSVP"
-          target={meetup.links.rsvp}
+          target={links.rsvp}
           text="Open"
         />
       ) : meetup.acceptingRsvp ? (
         <List.Item.Detail.Metadata.Label title="RSVP" text="Open on website" />
       ) : null}
-      {meetup.links.recording ? (
-        <List.Item.Detail.Metadata.Link
-          title="Recording"
-          target={meetup.links.recording}
-          text="Open"
-        />
-      ) : null}
-      {meetup.links.slides ? (
-        <List.Item.Detail.Metadata.Link
-          title="Slides"
-          target={meetup.links.slides}
-          text="Open"
-        />
-      ) : null}
       <List.Item.Detail.Metadata.Separator />
       {renderSpeakerTagsForList(meetup)}
       {renderSponsorTagsForList(meetup)}
-      {renderTagTagsForList(meetup)}
     </List.Item.Detail.Metadata>
   );
 }
