@@ -13,7 +13,7 @@ struct CodersMuAPIClient {
     let payload = try await fetchIndexPayload()
     let now = Date()
 
-    let indexMeetup = payload.props.meetups
+    let candidateMeetups = payload.props.meetups
       .filter { meetup in
         guard let endsAt = meetup.endsAt else {
           return false
@@ -28,14 +28,19 @@ struct CodersMuAPIClient {
 
         return leftStartsAt < rightStartsAt
       }
-      .first
 
-    guard let indexMeetup else {
-      return NextMeetupResponseDTO(meetup: nil)
+    for candidate in candidateMeetups {
+      let meetup = try await fetchMeetupDetail(id: candidate.id)
+      let contract = try meetup.toContract()
+
+      if contract.status == .canceled {
+        continue
+      }
+
+      return NextMeetupResponseDTO(meetup: contract)
     }
 
-    let meetup = try await fetchMeetupDetail(id: indexMeetup.id)
-    return NextMeetupResponseDTO(meetup: try meetup.toContract())
+    return NextMeetupResponseDTO(meetup: nil)
   }
 
   private func fetchIndexPayload() async throws -> CodersMuIndexPayload {

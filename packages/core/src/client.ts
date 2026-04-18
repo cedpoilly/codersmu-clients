@@ -63,14 +63,14 @@ export async function getMeetupsForList(provider: MeetupProvider, state: MeetupL
     return getPastMeetups(provider)
   }
 
+  const upcomingMeetups = await getUpcomingMeetups(provider)
+
   if (state === 'all') {
     return [
-      ...await getUpcomingMeetups(provider),
+      ...upcomingMeetups,
       ...await getPastMeetups(provider),
     ]
   }
 
-  const now = Date.now()
-  return sortMeetupsAscending(await provider.listMeetups())
-    .filter((meetup) => Date.parse(meetup.endsAt) >= now)
+  return upcomingMeetups
 }
