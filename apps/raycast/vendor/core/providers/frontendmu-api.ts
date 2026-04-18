@@ -1,8 +1,11 @@
 import type { Meetup, MeetupCache } from '../types'
 
-const API_BASE_URL = process.env.CODERSMU_API_BASE_URL ?? 'https://coders.mu/api/public/v1'
-const MEETUPS_API_URL = `${API_BASE_URL}/meetups`
+const DEFAULT_API_BASE_URL = 'https://coders.mu/api/public/v1'
 const FETCH_TIMEOUT_MS = 10_000
+
+export interface FetchFrontendMuMeetupsOptions {
+  apiBaseUrl?: string
+}
 
 interface RawSpeaker {
   id: string
@@ -82,12 +85,20 @@ async function fetchJson<T>(url: string): Promise<T> {
   return response.json() as Promise<T>
 }
 
-async function fetchMeetupIndex(): Promise<RawMeetup[]> {
-  return fetchJson<RawMeetup[]>(MEETUPS_API_URL)
+function normalizeApiBaseUrl(apiBaseUrl: string): string {
+  return apiBaseUrl.replace(/\/+$/, '')
 }
 
-async function fetchMeetupDetail(id: string): Promise<RawMeetup> {
-  return fetchJson<RawMeetup>(`${MEETUPS_API_URL}/${encodeURIComponent(id)}`)
+function resolveApiBaseUrl(options?: FetchFrontendMuMeetupsOptions): string {
+  return normalizeApiBaseUrl(options?.apiBaseUrl ?? process.env.CODERSMU_API_BASE_URL ?? DEFAULT_API_BASE_URL)
+}
+
+async function fetchMeetupIndex(meetupsApiUrl: string): Promise<RawMeetup[]> {
+  return fetchJson<RawMeetup[]>(meetupsApiUrl)
+}
+
+async function fetchMeetupDetail(meetupsApiUrl: string, id: string): Promise<RawMeetup> {
+  return fetchJson<RawMeetup>(`${meetupsApiUrl}/${encodeURIComponent(id)}`)
 }
 
 async function mapConcurrent<Input, Output>(
@@ -160,11 +171,13 @@ function normalizeMeetup(rawMeetup: RawMeetup): Meetup {
   }
 }
 
-export async function fetchFrontendMuMeetups(): Promise<MeetupCache> {
-  const meetups = await fetchMeetupIndex()
+export async function fetchFrontendMuMeetups(options?: FetchFrontendMuMeetupsOptions): Promise<MeetupCache> {
+  const apiBaseUrl = resolveApiBaseUrl(options)
+  const meetupsApiUrl = `${apiBaseUrl}/meetups`
+  const meetups = await fetchMeetupIndex(meetupsApiUrl)
   const details = await mapConcurrent(meetups, 4, async (meetup) => {
     try {
-      return await fetchMeetupDetail(meetup.id)
+      return await fetchMeetupDetail(meetupsApiUrl, meetup.id)
     }
     catch {
       return meetup
@@ -172,7 +185,7 @@ export async function fetchFrontendMuMeetups(): Promise<MeetupCache> {
   })
 
   return {
-    source: MEETUPS_API_URL,
+    source: meetupsApiUrl,
     scrapedAt: new Date().toISOString(),
     meetups: details.map(normalizeMeetup),
   }

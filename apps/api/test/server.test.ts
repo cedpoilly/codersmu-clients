@@ -25,21 +25,44 @@ const sampleCache: MeetupCache = {
   ],
 }
 
+const fetchFrontendMuMeetupsMock = vi.fn().mockResolvedValue(sampleCache)
+
 vi.mock('@codersmu/core', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@codersmu/core')>()
   return {
     ...actual,
-    fetchFrontendMuMeetups: vi.fn().mockResolvedValue(sampleCache),
+    fetchFrontendMuMeetups: fetchFrontendMuMeetupsMock,
   }
 })
 
 afterEach(() => {
+  delete process.env.CODERSMU_UPSTREAM_API_BASE_URL
   vi.clearAllMocks()
   vi.resetModules()
 })
 
+function resetFetchFrontendMuMeetupsMock() {
+  fetchFrontendMuMeetupsMock.mockReset()
+  fetchFrontendMuMeetupsMock.mockResolvedValue(sampleCache)
+}
+
 describe('handleRequest', () => {
+  it('uses the explicit upstream API base URL for producer fetches', async () => {
+    process.env.CODERSMU_UPSTREAM_API_BASE_URL = 'https://frontendmu.example/api/public/v1/'
+    resetFetchFrontendMuMeetupsMock()
+
+    const { handleRequest } = await import('../src/server')
+
+    const response = await handleRequest(new Request('http://localhost/meetups?state=all'))
+
+    expect(response.status).toBe(200)
+    expect(fetchFrontendMuMeetupsMock).toHaveBeenCalledWith({
+      apiBaseUrl: 'https://frontendmu.example/api/public/v1',
+    })
+  })
+
   it('returns the standardized meetup list response', async () => {
+    resetFetchFrontendMuMeetupsMock()
     const { handleRequest } = await import('../src/server')
 
     const response = await handleRequest(new Request('http://localhost/meetups?state=all'))
@@ -52,6 +75,7 @@ describe('handleRequest', () => {
   })
 
   it('returns the standardized next meetup response', async () => {
+    resetFetchFrontendMuMeetupsMock()
     const { handleRequest } = await import('../src/server')
 
     const response = await handleRequest(new Request('http://localhost/meetups/next'))
@@ -64,6 +88,7 @@ describe('handleRequest', () => {
   })
 
   it('returns 404 for an unknown meetup slug', async () => {
+    resetFetchFrontendMuMeetupsMock()
     const { handleRequest } = await import('../src/server')
 
     const response = await handleRequest(new Request('http://localhost/meetups/unknown-slug'))
@@ -76,6 +101,7 @@ describe('handleRequest', () => {
   })
 
   it('returns 400 for an unsupported list state', async () => {
+    resetFetchFrontendMuMeetupsMock()
     const { handleRequest } = await import('../src/server')
 
     const response = await handleRequest(new Request('http://localhost/meetups?state=broken'))
@@ -88,12 +114,45 @@ describe('handleRequest', () => {
   })
 
   it('reuses the in-memory API cache across requests', async () => {
-    const core = await import('@codersmu/core')
+    resetFetchFrontendMuMeetupsMock()
     const { handleRequest } = await import('../src/server')
 
     await handleRequest(new Request('http://localhost/meetups?state=all'))
     await handleRequest(new Request('http://localhost/meetups/next'))
 
-    expect(core.fetchFrontendMuMeetups).toHaveBeenCalledTimes(1)
+    expect(fetchFrontendMuMeetupsMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('reuses the last good provider when a refresh fails after the TTL', async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2099-04-18T06:00:00.000Z'))
+    resetFetchFrontendMuMeetupsMock()
+    fetchFrontendMuMeetupsMock
+      .mockResolvedValueOnce(sampleCache)
+      .mockRejectedValueOnce(new Error('frontend api down'))
+
+    const { handleRequest } = await import('../src/server')
+
+    const warmResponse = await handleRequest(new Request('http://localhost/meetups?state=all'))
+    expect(warmResponse.status).toBe(200)
+
+    vi.setSystemTime(new Date('2099-04-18T06:01:01.000Z'))
+
+    const response = await handleRequest(new Request('http://localhost/meetups/next'))
+    const payload = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(payload).toEqual({
+      meetup: sampleCache.meetups[0],
+    })
+    expect(fetchFrontendMuMeetupsMock).toHaveBeenCalledTimes(2)
+    expect(fetchFrontendMuMeetupsMock).toHaveBeenNthCalledWith(1, {
+      apiBaseUrl: 'https://coders.mu/api/public/v1',
+    })
+    expect(fetchFrontendMuMeetupsMock).toHaveBeenNthCalledWith(2, {
+      apiBaseUrl: 'https://coders.mu/api/public/v1',
+    })
+
+    vi.useRealTimers()
   })
 })

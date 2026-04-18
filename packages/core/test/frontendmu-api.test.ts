@@ -94,6 +94,35 @@ describe('fetchFrontendMuMeetups', () => {
     expect(cache.meetups[0]?.id).toBe('future-meetup')
   })
 
+  it('supports overriding the upstream API base URL', async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify([
+        {
+          id: 'future-meetup',
+          title: 'The Test Meetup',
+          date: '2099-04-18',
+          status: 'published',
+        },
+      ]), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({
+        id: 'future-meetup',
+        title: 'The Test Meetup',
+        description: null,
+        date: '2099-04-18',
+        status: 'published',
+      }), { status: 200 }))
+
+    vi.stubGlobal('fetch', fetchMock)
+
+    const cache = await fetchFrontendMuMeetups({
+      apiBaseUrl: 'https://frontendmu.example/api/public/v1/',
+    })
+
+    expect(fetchMock.mock.calls[0]?.[0]).toBe('https://frontendmu.example/api/public/v1/meetups')
+    expect(fetchMock.mock.calls[1]?.[0]).toBe('https://frontendmu.example/api/public/v1/meetups/future-meetup')
+    expect(cache.source).toBe('https://frontendmu.example/api/public/v1/meetups')
+  })
+
   it('normalizes cancelled statuses to canceled', async () => {
     const fetchMock = vi.fn()
       .mockResolvedValueOnce(new Response(JSON.stringify([

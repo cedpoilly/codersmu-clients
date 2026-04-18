@@ -10,13 +10,20 @@ import {
 import type { MeetupListState, MeetupListResponse, MeetupResponse, NextMeetupResponse } from '@codersmu/core'
 
 const API_CACHE_TTL_MS = 60_000
+const DEFAULT_UPSTREAM_API_BASE_URL = 'https://coders.mu/api/public/v1'
 
 let cachedProvider: CacheMeetupProvider | undefined
 let cachedProviderExpiresAt = 0
 let providerLoadPromise: Promise<CacheMeetupProvider> | undefined
 
+function resolveUpstreamApiBaseUrl(): string {
+  return (process.env.CODERSMU_UPSTREAM_API_BASE_URL ?? DEFAULT_UPSTREAM_API_BASE_URL).replace(/\/+$/, '')
+}
+
 async function loadProvider(): Promise<CacheMeetupProvider> {
-  const cache = await fetchFrontendMuMeetups()
+  const cache = await fetchFrontendMuMeetups({
+    apiBaseUrl: resolveUpstreamApiBaseUrl(),
+  })
   return new CacheMeetupProvider(cache)
 }
 
@@ -31,6 +38,14 @@ async function buildProvider(now = Date.now()): Promise<CacheMeetupProvider> {
         cachedProvider = provider
         cachedProviderExpiresAt = Date.now() + API_CACHE_TTL_MS
         return provider
+      })
+      .catch((error) => {
+        if (cachedProvider) {
+          cachedProviderExpiresAt = Date.now() + API_CACHE_TTL_MS
+          return cachedProvider
+        }
+
+        throw error
       })
       .finally(() => {
         providerLoadPromise = undefined
