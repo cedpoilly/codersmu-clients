@@ -1,6 +1,6 @@
 # Coders.mu Hosted API
 
-Thin HTTP producer for the standardized meetup responses in `/Users/cedricpoilly/code/codersmu-clients/packages/core/src/responses.ts`.
+Thin HTTP producer for the standardized meetup responses in [`../../packages/core/src/responses.ts`](../../packages/core/src/responses.ts).
 
 ## Endpoints
 
@@ -46,4 +46,4 @@ The main event names to watch during incidents are:
 - `provider_disk_cache_reused`
 - `provider_disk_cache_write_failed`
 
-For deploy, verify, rollback, and first-triage steps, see [RUNBOOK.md](/Users/cedricpoilly/code/codersmu-clients/apps/api/RUNBOOK.md).
+For deploy, verify, rollback, and first-triage steps, see [RUNBOOK.md](./RUNBOOK.md).

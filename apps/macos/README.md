@@ -1,6 +1,6 @@
 # Coders.mu macOS App
 
-Local scaffold for the native macOS menu bar client described in the macOS PRD and architecture draft.
+Native macOS menu bar client for Coders.mu meetup awareness.
 
 Current scope:
 
@@ -17,6 +17,20 @@ cd apps/macos
 xcodegen generate
 ```
 
-## Current limitation
+## Open it in Xcode
 
-This repo currently has Command Line Tools selected instead of full Xcode, so project generation works locally but `xcodebuild` does not until Xcode is installed and selected.
+```bash
+open CodersmuMenuBar.xcodeproj
+```
+
+## Run tests
+
+From the repository root:
+
+```bash
+xcodebuild -project apps/macos/CodersmuMenuBar.xcodeproj -scheme CodersmuMenuBar -configuration Debug CODE_SIGNING_ALLOWED=NO test
+```
+
+## Status
+
+The app is actively developed and tested in CI. Packaging and end-user distribution are still being finalized.

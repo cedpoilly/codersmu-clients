@@ -1,38 +1,59 @@
 # codersmu-clients
 
-Exploratory workspace for Coders.mu clients.
+Clients and infrastructure for bringing Coders.mu meetup data into developer tools.
 
-This repository is still in the exploratory phase. The CLI surface, internal package layout, API integration strategy, and client boundaries can all change while the product direction is still being tested.
+This repository contains the shared meetup-fetching core, a hosted API, a CLI, a macOS menu bar app, and a Raycast extension. The project is still exploratory, but it is actively used and contributions are welcome, especially around reliability, polish, and developer experience.
+
+## What This Repo Contains
+
+- `src/`: installable CLI package exposed as `codersmu` and `cmu`
+- `packages/core`: shared meetup fetching, cache, calendar, and provider logic
+- `apps/api`: hosted API used by the shipped clients
+- `apps/macos`: native macOS menu bar app
+- `apps/raycast`: Raycast extension
+
+## Current Status
+
+- prototype codebase, not a stable public platform yet
+- GitHub-first distribution, no npm release yet
+- the CLI, macOS app, and Raycast extension prefer the hosted API at `https://codersmu.cedpoilly.dev`
+- the public `coders.mu` API remains the upstream data source and shared fallback
+- CI runs on the shared core, the hosted API, the Raycast extension, and the macOS app
+
+## Quick Start
+
+Clone the repo and install dependencies:
+
+```bash
+pnpm install
+pnpm build:all
+```
+
+Try the CLI from the repo root:
+
+```bash
+node dist/cli.mjs next
+node dist/cli.mjs list
+node dist/cli.mjs view next
+```
+
+Run the main repo checks:
+
+```bash
+pnpm check
+npm run check:hosted-api
+```
 
 ## Current Clients
 
 ### CLI
 
-The primary client today is the CLI at the repository root.
+The CLI is the most complete client today.
 
 - installable from GitHub
 - commands exposed as `codersmu` and `cmu`
-- live data now comes from the public `coders.mu` API
-- intended as a prototype, not a stable release
-
-### Raycast
-
-The Raycast client lives in `apps/raycast`.
-
-- local extension prototype
-- uses the shared core logic directly
-- good enough for local experimentation
-- not published to the Raycast Store yet
-
-## Overall Status
-
-- exploratory prototype, not a stable product
-- GitHub-first distribution, no npm release yet
-- the CLI, macOS app, and Raycast extension now prefer the hosted API at `https://codersmu.cedpoilly.dev`
-- the public `coders.mu` API remains the shared fallback and upstream data source
-- CLI and Raycast use a 1-hour cache window during business hours by default, and a 6-hour window outside them
-
-## CLI
+- uses the hosted API by default, with fallback to upstream data
+- suitable for day-to-day use, though the command surface can still evolve
 
 Install from the GitHub repository:
 
@@ -75,20 +96,37 @@ cmu next
 cmu previous
 ```
 
-The CLI refreshes public meetup data automatically and uses a local cache internally. Users do not need to manage the cache themselves.
+The CLI refreshes meetup data automatically and uses a local cache internally. Users do not need to manage the cache themselves.
 
 Use `--short` or `-s` for a more compact human-readable listing.
 Use `--refresh` on read commands to bypass the local cache for that invocation.
 Use `ls` and `show` as short aliases for `list` and `view`.
 
-Breaking changes:
-- `codersmu list --json` now returns a bare JSON array of meetups instead of `{ "meetups": [...] }`.
-- `codersmu view <slug> --json` now returns the bare meetup object instead of `{ "meetup": {...} }`.
-- `codersmu view next --json` now exits with the same not-found behavior as the human-readable command when there is no upcoming meetup, instead of returning `{ "meetup": null }`.
+### macOS Menu Bar App
 
-## Raycast
+The macOS app lives in [`apps/macos`](./apps/macos/README.md).
 
-The Raycast extension currently uses the same shared API-backed core layer as the CLI.
+- native SwiftUI `MenuBarExtra` app
+- uses the hosted API first
+- keeps its own persistence, change detection, and notification flow
+- tested in CI, but packaging and distribution are still in progress
+
+To work on it locally:
+
+```bash
+cd apps/macos
+xcodegen generate
+open CodersmuMenuBar.xcodeproj
+```
+
+### Raycast
+
+The Raycast extension lives in [`apps/raycast`](./apps/raycast/README.md).
+
+- local extension prototype
+- uses the same shared core as the CLI
+- provides `Next Meetup` and `Meetups`
+- not published to the Raycast Store yet
 
 To run it locally:
 
@@ -98,82 +136,25 @@ npm install
 npm run dev
 ```
 
-Current Raycast commands:
-
-- `Next Meetup`
-- `Meetups`
-
 The `Meetups` command groups results into live, upcoming, and past sections and exposes quick actions for RSVP links, recordings, slides, maps, and calendar exports.
 
-For more Raycast-specific notes, see `apps/raycast/README.md`.
+### Hosted API
 
-## Future Roadmap
+The hosted API lives in [`apps/api`](./apps/api/README.md) and is deployed at [codersmu.cedpoilly.dev](https://codersmu.cedpoilly.dev).
 
-### Community Presence and In-Flow Awareness
+- `GET /health`
+- `GET /meetups?state=all|upcoming|past`
+- `GET /meetups/next`
+- `GET /meetups/:slug`
 
-The broader goal of `codersmu-clients` is not just to expose website data in different shells. It is to make sure developers stay present and informed about community events without having to manually check the website for updates.
-
-This roadmap is centered on timely awareness:
-
-- new meetup announcements
-- RSVP openings and other time-sensitive windows
-- location or schedule changes that people should notice quickly
-
-| Pillar | Direction | Presence Value |
-| --- | --- | --- |
-| Social MCP (Model Context Protocol) Server | Bring `coders.mu` into AI coding agents so meetup information can appear directly inside the development workflow. A strong early use case is "shoulder-tap" notifications for new meetups, RSVP openings, and location changes. | Developers stay aware of community activity while already working with coding agents instead of discovering updates too late. |
-| Native Desktop Apps (macOS/Windows/Linux) | Build dedicated desktop clients with system-level notifications and tray-icon alerts across platforms. | Developers get durable, OS-native signals for time-sensitive RSVP windows and event changes without keeping the website open. |
-| Browser Extensions | Run active background polling with browser-native notifications for meetup updates and other community changes. | Developers who already spend most of their day in the browser can stay informed in-flow, with minimal friction and no manual refresh habit. |
-
-Taken together, these clients aim to make Coders.mu ambient in the developer workflow: visible at the right time, in the right place, without requiring repeated manual checking.
-
-## Workspace Layout
-
-```text
-.
-├── apps/
-│   └── raycast/
-├── packages/
-│   └── core/
-└── src/
-```
-
-- `src/`: installable CLI package
-- `packages/core`: shared meetup fetching, cache, calendar, and provider logic
-- `apps/raycast`: npm-managed Raycast extension app
-
-## Development
-
-From the repository root:
-
-```bash
-pnpm install
-pnpm build:all
-node dist/cli.mjs next
-node dist/cli.mjs previous
-node dist/cli.mjs list
-node dist/cli.mjs past --short
-node dist/cli.mjs view next
-pnpm release:check
-```
-
-GitHub Actions already exist for CI and a future npm release path, but npm publishing is intentionally deferred while the project remains exploratory.
-
-## API Integration
-
-The shared core still uses the public `coders.mu` API at `https://coders.mu/api/public/v1/meetups` as its default source, but the shipped CLI, macOS app, and Raycast extension now opt themselves into the deployed hosted edge at `https://codersmu.cedpoilly.dev`. The hosted service itself reads from the same upstream JSON contract, and `CODERSMU_HOSTED_API_BASE_URL` remains available as an explicit override if you need to point a client elsewhere.
-
-For a diagram-based system overview and per-client fallback documentation, see [ARCHITECTURE.md](./ARCHITECTURE.md).
-
-For hosted API operations, see [apps/api/RUNBOOK.md](./apps/api/RUNBOOK.md).
-
-To smoke-test the live hosted deployment from this repo:
+To smoke-test the live deployment from this repo:
 
 ```bash
 npm run check:hosted-api
 ```
 
-That probe now validates:
+That probe validates:
+
 - `GET /health`
 - `HEAD /health`
 - `GET /meetups?state=all`
@@ -183,4 +164,52 @@ That probe now validates:
 
 Set `CODERSMU_HOSTED_API_BASE_URL` first if you want to check a different deployment target. Use `CODERSMU_HOSTED_API_TIMEOUT_SECONDS` to tighten or relax the live probe timeout.
 
-That same probe is also available in GitHub Actions through the `Hosted API` workflow on an hourly schedule and manual dispatch. Treat it as a live uptime check, not as proof that a freshly pushed commit is already deployed.
+## Architecture
+
+The shared core still uses the public `coders.mu` API at `https://coders.mu/api/public/v1/meetups` as its default source, but the shipped CLI, macOS app, and Raycast extension opt themselves into the hosted edge at `https://codersmu.cedpoilly.dev`. The hosted service itself reads from the same upstream JSON contract.
+
+For a diagram-based system overview and per-client fallback documentation, see [ARCHITECTURE.md](./ARCHITECTURE.md).
+
+For hosted API operations, see [apps/api/RUNBOOK.md](./apps/api/RUNBOOK.md).
+
+## Contributing
+
+Contributions are welcome. The highest-value work right now is:
+
+- CLI polish and UX consistency
+- macOS app reliability and packaging
+- Raycast quality, especially the `Next Meetup` flow
+- hosted API resiliency and observability
+- tests, fixtures, and contributor-facing docs
+
+Start with [CONTRIBUTING.md](./CONTRIBUTING.md) for setup, workflow, and pull request guidance.
+
+Please also read:
+
+- [CODE_OF_CONDUCT.md](./CODE_OF_CONDUCT.md)
+- [SECURITY.md](./SECURITY.md)
+
+## Development
+
+From the repository root:
+
+```bash
+pnpm install
+pnpm build:all
+pnpm check
+npm run check:hosted-api
+pnpm release:check
+```
+
+GitHub Actions run on pushes to `main` and pull requests. The main CI workflow covers the shared workspace checks, Raycast, macOS, and a deploy-artifact boot test for the hosted API.
+
+## Roadmap
+
+The long-term goal of `codersmu-clients` is not just to mirror website data in different shells. It is to make Coders.mu ambient in the developer workflow, visible at the right time and in the right place.
+
+Current directions:
+
+- new meetup announcement awareness
+- RSVP opening and change detection
+- richer native clients across platforms
+- browser and agent surfaces that reduce manual checking
