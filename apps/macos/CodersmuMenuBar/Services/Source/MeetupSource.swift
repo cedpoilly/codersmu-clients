@@ -5,6 +5,11 @@ protocol MeetupSource {
   func fetchNextMeetup() async throws -> MeetupSnapshot?
 }
 
+struct DeveloperSimulationScenario {
+  var previousSnapshot: MeetupSnapshot?
+  var latestSnapshot: MeetupSnapshot?
+}
+
 enum DeveloperInjectedEvent: String, Codable, CaseIterable, Identifiable {
   case nextMeetupCreated
   case dateChanged
@@ -31,57 +36,60 @@ enum DeveloperInjectedEvent: String, Codable, CaseIterable, Identifiable {
     }
   }
 
-  func applying(to snapshot: MeetupSnapshot?) -> MeetupSnapshot? {
+  func scenario(from snapshot: MeetupSnapshot?) -> DeveloperSimulationScenario? {
     switch self {
     case .nextMeetupCreated:
-      var snapshot = snapshot ?? DeveloperInjectedEvent.makeSyntheticMeetup()
+      var latestSnapshot = snapshot ?? DeveloperInjectedEvent.makeSyntheticMeetup()
       let newStart = Calendar.current.date(byAdding: .day, value: 28, to: Date()) ?? Date().addingTimeInterval(28 * 24 * 60 * 60)
       let newEnd = Calendar.current.date(byAdding: .hour, value: 4, to: newStart) ?? newStart.addingTimeInterval(4 * 60 * 60)
-      snapshot.slug = "dev-\(Int(Date().timeIntervalSince1970))"
-      snapshot.title = "Developer Test Meetup"
-      snapshot.description = "Synthetic meetup used to exercise the notification pipeline."
-      snapshot.startsAt = newStart
-      snapshot.endsAt = newEnd
-      snapshot.venueName = "Dev Venue"
-      snapshot.venueAddress = "Developer Override, Ebene"
-      snapshot.meetupURL = URL(string: "https://coders.mu/meetup/\(snapshot.slug)")!
-      snapshot.rsvpURL = snapshot.meetupURL
-      snapshot.seatsRemaining = 42
-      snapshot.status = .upcoming
-      snapshot.lastSyncedAt = Date()
-      return snapshot
+      latestSnapshot.slug = "dev-\(Int(Date().timeIntervalSince1970))"
+      latestSnapshot.title = "Developer Test Meetup"
+      latestSnapshot.description = "Synthetic meetup used to exercise the notification pipeline."
+      latestSnapshot.startsAt = newStart
+      latestSnapshot.endsAt = newEnd
+      latestSnapshot.venueName = "Dev Venue"
+      latestSnapshot.venueAddress = "Developer Override, Ebene"
+      latestSnapshot.meetupURL = URL(string: "https://coders.mu/meetup/\(latestSnapshot.slug)")!
+      latestSnapshot.rsvpURL = latestSnapshot.meetupURL
+      latestSnapshot.seatsRemaining = 42
+      latestSnapshot.status = .upcoming
+      latestSnapshot.lastSyncedAt = Date()
+      return DeveloperSimulationScenario(previousSnapshot: snapshot, latestSnapshot: latestSnapshot)
     case .dateChanged:
-      guard var snapshot else {
-        return nil
-      }
-      let shiftedStart = Calendar.current.date(byAdding: .day, value: 1, to: snapshot.startsAt ?? Date()) ?? Date().addingTimeInterval(24 * 60 * 60)
-      snapshot.startsAt = shiftedStart
-      snapshot.endsAt = Calendar.current.date(byAdding: .hour, value: 4, to: shiftedStart) ?? shiftedStart.addingTimeInterval(4 * 60 * 60)
-      snapshot.lastSyncedAt = Date()
-      return snapshot
+      let previousSnapshot = snapshot ?? DeveloperInjectedEvent.makeSyntheticMeetup()
+      var latestSnapshot = previousSnapshot
+      let shiftedStart = Calendar.current.date(byAdding: .day, value: 1, to: previousSnapshot.startsAt ?? Date()) ?? Date().addingTimeInterval(24 * 60 * 60)
+      latestSnapshot.startsAt = shiftedStart
+      latestSnapshot.endsAt = Calendar.current.date(byAdding: .hour, value: 4, to: shiftedStart) ?? shiftedStart.addingTimeInterval(4 * 60 * 60)
+      latestSnapshot.lastSyncedAt = Date()
+      return DeveloperSimulationScenario(previousSnapshot: previousSnapshot, latestSnapshot: latestSnapshot)
     case .locationChanged:
-      guard var snapshot else {
-        return nil
-      }
-      snapshot.venueName = "Developer Test Location"
-      snapshot.venueAddress = "Floor 99, Override Tower, Ebene"
-      snapshot.lastSyncedAt = Date()
-      return snapshot
+      let previousSnapshot = snapshot ?? DeveloperInjectedEvent.makeSyntheticMeetup()
+      var latestSnapshot = previousSnapshot
+      let marker = UUID().uuidString.lowercased()
+      latestSnapshot.venueName = "Developer Test Location \(marker.prefix(8))"
+      latestSnapshot.venueAddress = "Override Tower \(marker.suffix(6)), Ebene"
+      latestSnapshot.lastSyncedAt = Date()
+      return DeveloperSimulationScenario(previousSnapshot: previousSnapshot, latestSnapshot: latestSnapshot)
     case .seatThresholdReached:
-      guard var snapshot else {
-        return nil
-      }
-      snapshot.seatsRemaining = 5
-      snapshot.lastSyncedAt = Date()
-      return snapshot
+      var previousSnapshot = snapshot ?? DeveloperInjectedEvent.makeSyntheticMeetup()
+      var latestSnapshot = previousSnapshot
+      previousSnapshot.seatsRemaining = 42
+      latestSnapshot.seatsRemaining = 5
+      latestSnapshot.lastSyncedAt = Date()
+      return DeveloperSimulationScenario(previousSnapshot: previousSnapshot, latestSnapshot: latestSnapshot)
     case .meetupPostponed:
-      guard var snapshot else {
-        return nil
-      }
-      snapshot.status = .postponed
-      snapshot.lastSyncedAt = Date()
-      return snapshot
+      var previousSnapshot = snapshot ?? DeveloperInjectedEvent.makeSyntheticMeetup()
+      var latestSnapshot = previousSnapshot
+      previousSnapshot.status = .upcoming
+      latestSnapshot.status = .postponed
+      latestSnapshot.lastSyncedAt = Date()
+      return DeveloperSimulationScenario(previousSnapshot: previousSnapshot, latestSnapshot: latestSnapshot)
     }
+  }
+
+  func applying(to snapshot: MeetupSnapshot?) -> MeetupSnapshot? {
+    scenario(from: snapshot)?.latestSnapshot
   }
 
   private static func makeSyntheticMeetup(now: Date = Date()) -> MeetupSnapshot {

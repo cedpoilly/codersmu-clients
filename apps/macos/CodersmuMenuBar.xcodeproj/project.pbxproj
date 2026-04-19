@@ -24,6 +24,7 @@
 		771616238A845ED5450FAA93 /* MeetupSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B75B405D7128AF1E5A5A095 /* MeetupSnapshot.swift */; };
 		7CFFAD376199F235D9AE9A79 /* AppLogger.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D0787C53EA7FDC4D55BF5CB /* AppLogger.swift */; };
 		7D738A42486823AFFE3E64EF /* MenuBarStatusSectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C565A503F4E98FACA8718F6E /* MenuBarStatusSectionView.swift */; };
+		83ACB41AA164559135344B64 /* AppIconAssetCatalogTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F11BA8D0F9AA2D41D22EA0E8 /* AppIconAssetCatalogTests.swift */; };
 		8DE196C34393C5523C31377A /* ChangeDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50BF04F5A91DE60B8F900314 /* ChangeDetector.swift */; };
 		8F2FF0F00A869CD3BC286A02 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 8F96EB15D14402A1722A50AD /* Assets.xcassets */; };
 		927FDED7D141CE151FC1A3EA /* MeetupDTO.swift in Sources */ = {isa = PBXBuildFile; fileRef = 429D81066574B7DC0F86270A /* MeetupDTO.swift */; };
@@ -89,6 +90,7 @@
 		CD5182E3BC2DC291C72944BA /* MeetupChangeEvent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeetupChangeEvent.swift; sourceTree = "<group>"; };
 		D0F358F67F13CC07667091BA /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		F06D8F45F14F54D0983077E8 /* ApplicationSupportSnapshotStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApplicationSupportSnapshotStore.swift; sourceTree = "<group>"; };
+		F11BA8D0F9AA2D41D22EA0E8 /* AppIconAssetCatalogTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppIconAssetCatalogTests.swift; sourceTree = "<group>"; };
 		F9B5666665F3B4CBC4836852 /* RefreshCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RefreshCoordinator.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -117,6 +119,7 @@
 		258AC30DF7FD7F276C8A6640 /* CodersmuMenuBarTests */ = {
 			isa = PBXGroup;
 			children = (
+				F11BA8D0F9AA2D41D22EA0E8 /* AppIconAssetCatalogTests.swift */,
 				47F395CB7B3798DBA9B704DD /* ChangeDetectorTests.swift */,
 				2C4F026EE6520F40EC39B5AA /* RefreshCoordinatorTests.swift */,
 				C1C568D32BB344E70BA09E19 /* RefreshSchedulerTests.swift */,
@@ -368,6 +371,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				83ACB41AA164559135344B64 /* AppIconAssetCatalogTests.swift in Sources */,
 				D4E61F0FB2822EBAA951FCF1 /* ChangeDetectorTests.swift in Sources */,
 				BF06596738D18D07FF5B88DA /* RefreshCoordinatorTests.swift in Sources */,
 				6605A8A6FB5BBDE0B059D531 /* RefreshSchedulerTests.swift in Sources */,

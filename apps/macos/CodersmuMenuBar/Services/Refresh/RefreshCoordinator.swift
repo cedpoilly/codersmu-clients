@@ -53,44 +53,68 @@ struct RefreshCoordinator {
     )
   }
 
+  func simulate(
+    previousSnapshot: MeetupSnapshot?,
+    latestSnapshot: MeetupSnapshot?,
+    preferences: AppPreferences
+  ) async -> RefreshOutcome {
+    await processRefreshResult(
+      latestSnapshot: latestSnapshot,
+      trigger: .manual,
+      preferences: preferences,
+      previousSnapshotOverride: previousSnapshot,
+      existingFingerprintsOverride: [],
+      persistResult: false
+    )
+  }
+
   private func processRefreshResult(
     latestSnapshot: MeetupSnapshot?,
     trigger: RefreshTrigger,
-    preferences: AppPreferences
+    preferences: AppPreferences,
+    previousSnapshotOverride: MeetupSnapshot? = nil,
+    existingFingerprintsOverride: Set<String>? = nil,
+    persistResult: Bool = true
   ) async -> RefreshOutcome {
     let now = Date()
     var state = (try? snapshotStore.loadState()) ?? .empty
 
-    let previousSnapshot = state.snapshot
+    let previousSnapshot = previousSnapshotOverride ?? state.snapshot
 
     guard let latestSnapshot else {
-      state.snapshot = nil
-      state.lastRefreshAt = now
-      do {
-        try snapshotStore.saveState(state)
-      } catch {
-        return handleRefreshError(error, state: state)
+      if persistResult {
+        state.snapshot = nil
+        state.lastRefreshAt = now
+        do {
+          try snapshotStore.saveState(state)
+        } catch {
+          return handleRefreshError(error, state: state)
+        }
       }
 
       return RefreshOutcome(snapshot: nil, events: [], lastRefreshAt: now, errorDescription: nil)
     }
 
-    let existingFingerprints = previousSnapshot?.changeIdentity == latestSnapshot.changeIdentity
-      ? state.deliveredFingerprints
-      : Set<String>()
+    let existingFingerprints = existingFingerprintsOverride ?? (
+      previousSnapshot?.changeIdentity == latestSnapshot.changeIdentity
+        ? state.deliveredFingerprints
+        : Set<String>()
+    )
 
     let detectedEvents = changeDetector.detectChanges(from: previousSnapshot, to: latestSnapshot)
     let freshEvents = detectedEvents.filter { !existingFingerprints.contains($0.fingerprint) }
 
     await notificationService.notify(events: freshEvents, snapshot: latestSnapshot, preferences: preferences)
 
-    state.snapshot = latestSnapshot
-    state.lastRefreshAt = now
-    state.deliveredFingerprints = existingFingerprints.union(freshEvents.map(\.fingerprint))
-    do {
-      try snapshotStore.saveState(state)
-    } catch {
-      return handleRefreshError(error, state: state)
+    if persistResult {
+      state.snapshot = latestSnapshot
+      state.lastRefreshAt = now
+      state.deliveredFingerprints = existingFingerprints.union(freshEvents.map(\.fingerprint))
+      do {
+        try snapshotStore.saveState(state)
+      } catch {
+        return handleRefreshError(error, state: state)
+      }
     }
 
     AppLog.refresh.debug("Refresh completed via \(trigger.rawValue).")

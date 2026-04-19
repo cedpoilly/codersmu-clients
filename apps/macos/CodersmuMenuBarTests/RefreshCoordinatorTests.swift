@@ -22,11 +22,11 @@ final class RefreshCoordinatorTests: XCTestCase {
     XCTAssertFalse(notificationService.notifiedEvents.isEmpty)
   }
 
-  func testChangeSimulationsRequireABaselineSnapshot() {
-    XCTAssertNil(DeveloperInjectedEvent.dateChanged.applying(to: nil))
-    XCTAssertNil(DeveloperInjectedEvent.locationChanged.applying(to: nil))
-    XCTAssertNil(DeveloperInjectedEvent.seatThresholdReached.applying(to: nil))
-    XCTAssertNil(DeveloperInjectedEvent.meetupPostponed.applying(to: nil))
+  func testChangeSimulationsCanCreateSyntheticBaselines() {
+    XCTAssertNotNil(DeveloperInjectedEvent.dateChanged.applying(to: nil))
+    XCTAssertNotNil(DeveloperInjectedEvent.locationChanged.applying(to: nil))
+    XCTAssertNotNil(DeveloperInjectedEvent.seatThresholdReached.applying(to: nil))
+    XCTAssertNotNil(DeveloperInjectedEvent.meetupPostponed.applying(to: nil))
   }
 
   func testNextMeetupSimulationCanCreateASyntheticSnapshot() {
@@ -115,6 +115,31 @@ final class RefreshCoordinatorTests: XCTestCase {
     XCTAssertEqual(snapshot.endsAt, ISO8601DateFormatter().date(from: "2099-04-19T03:00:00Z"))
   }
 
+  func testSimulateLocationChangeFallsBackToSyntheticBaselineWhenSourceFails() async {
+    let defaults = UserDefaults(suiteName: "RefreshCoordinatorTests-\(UUID().uuidString)")!
+
+    let snapshotStore = RecordingSnapshotStore(state: .empty)
+    let notificationService = RecordingNotificationService()
+    let coordinator = RefreshCoordinator(
+      source: ThrowingMeetupSource(),
+      snapshotStore: snapshotStore,
+      changeDetector: ChangeDetector(),
+      notificationService: notificationService
+    )
+    let model = AppModel(
+      coordinator: coordinator,
+      scheduler: RefreshScheduler(intervalProvider: { .seconds(3600) }),
+      preferencesStore: AppPreferencesStore(userDefaults: defaults),
+      launchAtLoginManager: LaunchAtLoginManager()
+    )
+
+    await model.simulateDeveloperEvent(.locationChanged)
+
+    XCTAssertEqual(model.refreshState, RefreshState.idle, "Simulation must succeed even when the live fetch throws.")
+    XCTAssertNotNil(model.snapshot, "A synthetic baseline should drive the simulated snapshot when the source is unavailable.")
+    XCTAssertEqual(notificationService.notificationBatches.last?.first?.kind, .locationChanged)
+  }
+
   func testSimulateNewMeetupDoesNotRequireALiveBaseline() async {
     let defaults = UserDefaults(suiteName: "RefreshCoordinatorTests-\(UUID().uuidString)")!
 
@@ -136,13 +161,203 @@ final class RefreshCoordinatorTests: XCTestCase {
     await model.simulateDeveloperEvent(.nextMeetupCreated)
 
     XCTAssertEqual(model.snapshot?.title, "Developer Test Meetup")
-    XCTAssertEqual(model.refreshState, .idle)
+    XCTAssertEqual(model.refreshState, RefreshState.idle)
+  }
+
+  func testRepeatedLocationSimulationProducesFreshNotificationEvents() async {
+    let defaults = UserDefaults(suiteName: "RefreshCoordinatorTests-\(UUID().uuidString)")!
+    let baselineSnapshot = makeSnapshot(
+      slug: "location-baseline",
+      meetupURL: URL(string: "https://coders.mu/meetup/location-baseline")!,
+      rsvpURL: URL(string: "https://coders.mu/meetup/location-baseline")!,
+      venueName: "Original Venue",
+      venueAddress: "Original Address"
+    )
+
+    let snapshotStore = RecordingSnapshotStore(state: PersistedAppState(
+      snapshot: baselineSnapshot,
+      deliveredFingerprints: [],
+      lastRefreshAt: nil
+    ))
+    let notificationService = RecordingNotificationService()
+    let coordinator = RefreshCoordinator(
+      source: StubMeetupSource(snapshot: baselineSnapshot),
+      snapshotStore: snapshotStore,
+      changeDetector: ChangeDetector(),
+      notificationService: notificationService
+    )
+    let model = AppModel(
+      coordinator: coordinator,
+      scheduler: RefreshScheduler(intervalProvider: { .seconds(3600) }),
+      preferencesStore: AppPreferencesStore(userDefaults: defaults),
+      launchAtLoginManager: LaunchAtLoginManager()
+    )
+    model.snapshot = baselineSnapshot
+
+    await model.simulateDeveloperEvent(DeveloperInjectedEvent.locationChanged)
+    let firstLocation = model.snapshot?.locationDescription
+    let firstBatch = notificationService.notificationBatches.last ?? []
+
+    await model.simulateDeveloperEvent(DeveloperInjectedEvent.locationChanged)
+    let secondLocation = model.snapshot?.locationDescription
+    let secondBatch = notificationService.notificationBatches.last ?? []
+
+    XCTAssertNotEqual(firstLocation, secondLocation)
+    XCTAssertEqual(firstBatch.first?.kind, .locationChanged)
+    XCTAssertEqual(secondBatch.first?.kind, .locationChanged)
+  }
+
+  func testSeatThresholdSimulationStillFiresFromALowSeatBaseline() async {
+    let defaults = UserDefaults(suiteName: "RefreshCoordinatorTests-\(UUID().uuidString)")!
+    let baselineSnapshot = makeSnapshot(
+      slug: "seats-baseline",
+      meetupURL: URL(string: "https://coders.mu/meetup/seats-baseline")!,
+      rsvpURL: URL(string: "https://coders.mu/meetup/seats-baseline")!,
+      seatsRemaining: 5
+    )
+
+    let snapshotStore = RecordingSnapshotStore(state: PersistedAppState(
+      snapshot: baselineSnapshot,
+      deliveredFingerprints: [],
+      lastRefreshAt: nil
+    ))
+    let notificationService = RecordingNotificationService()
+    let coordinator = RefreshCoordinator(
+      source: StubMeetupSource(snapshot: baselineSnapshot),
+      snapshotStore: snapshotStore,
+      changeDetector: ChangeDetector(),
+      notificationService: notificationService
+    )
+    let model = AppModel(
+      coordinator: coordinator,
+      scheduler: RefreshScheduler(intervalProvider: { .seconds(3600) }),
+      preferencesStore: AppPreferencesStore(userDefaults: defaults),
+      launchAtLoginManager: LaunchAtLoginManager()
+    )
+    model.snapshot = baselineSnapshot
+
+    await model.simulateDeveloperEvent(DeveloperInjectedEvent.seatThresholdReached)
+
+    XCTAssertEqual(notificationService.notificationBatches.last?.first?.kind, .seatThresholdReached)
+    XCTAssertEqual(model.snapshot?.seatsRemaining, 5)
+    XCTAssertEqual(model.refreshState, RefreshState.idle)
+  }
+
+  func testSimulationDoesNotPoisonPersistedSnapshotForLiveRefresh() async {
+    let liveBaseline = makeSnapshot(
+      slug: "live-baseline",
+      meetupURL: URL(string: "https://coders.mu/meetup/live-baseline")!,
+      rsvpURL: URL(string: "https://coders.mu/meetup/live-baseline")!,
+      venueName: "Real Venue",
+      venueAddress: "Real Address"
+    )
+    let deliveredFingerprint = "\(liveBaseline.changeIdentity):\(MeetupChangeKind.rsvpOpened.rawValue)"
+    let snapshotStore = RecordingSnapshotStore(state: PersistedAppState(
+      snapshot: liveBaseline,
+      deliveredFingerprints: [deliveredFingerprint],
+      lastRefreshAt: nil
+    ))
+    let notificationService = RecordingNotificationService()
+    let coordinator = RefreshCoordinator(
+      source: StubMeetupSource(snapshot: liveBaseline),
+      snapshotStore: snapshotStore,
+      changeDetector: ChangeDetector(),
+      notificationService: notificationService
+    )
+
+    _ = await coordinator.simulate(
+      previousSnapshot: liveBaseline,
+      latestSnapshot: DeveloperInjectedEvent.locationChanged.applying(to: liveBaseline),
+      preferences: .default
+    )
+
+    XCTAssertTrue(snapshotStore.savedStates.isEmpty, "Simulation must not write to the durable snapshot store.")
+
+    let outcome = await coordinator.refresh(trigger: .scheduled, preferences: .default)
+
+    XCTAssertEqual(outcome.snapshot, liveBaseline)
+    XCTAssertTrue(outcome.events.isEmpty, "Live refresh after simulation must not emit false change events.")
+    XCTAssertEqual(snapshotStore.savedStates.last?.deliveredFingerprints, [deliveredFingerprint])
+  }
+
+  func testSimulationPreservesRealDeliveredFingerprints() async {
+    let liveBaseline = makeSnapshot(
+      slug: "fingerprint-baseline",
+      meetupURL: URL(string: "https://coders.mu/meetup/fingerprint-baseline")!,
+      rsvpURL: URL(string: "https://coders.mu/meetup/fingerprint-baseline")!
+    )
+    let deliveredFingerprint = "\(liveBaseline.changeIdentity):\(MeetupChangeKind.rsvpOpened.rawValue)"
+    let snapshotStore = RecordingSnapshotStore(state: PersistedAppState(
+      snapshot: liveBaseline,
+      deliveredFingerprints: [deliveredFingerprint],
+      lastRefreshAt: nil
+    ))
+    let notificationService = RecordingNotificationService()
+    let coordinator = RefreshCoordinator(
+      source: StubMeetupSource(snapshot: liveBaseline),
+      snapshotStore: snapshotStore,
+      changeDetector: ChangeDetector(),
+      notificationService: notificationService
+    )
+
+    _ = await coordinator.simulate(
+      previousSnapshot: liveBaseline,
+      latestSnapshot: DeveloperInjectedEvent.meetupPostponed.applying(to: liveBaseline),
+      preferences: .default
+    )
+
+    let reloadedState = try? snapshotStore.loadState()
+    XCTAssertEqual(
+      reloadedState?.deliveredFingerprints,
+      [deliveredFingerprint],
+      "Simulation must not mutate the real deliveredFingerprints set."
+    )
+    XCTAssertEqual(reloadedState?.snapshot, liveBaseline)
+  }
+
+  func testPostponedSimulationStillFiresWhenSnapshotIsAlreadyPostponed() async {
+    let defaults = UserDefaults(suiteName: "RefreshCoordinatorTests-\(UUID().uuidString)")!
+    var baselineSnapshot = makeSnapshot(
+      slug: "postponed-baseline",
+      meetupURL: URL(string: "https://coders.mu/meetup/postponed-baseline")!,
+      rsvpURL: URL(string: "https://coders.mu/meetup/postponed-baseline")!
+    )
+    baselineSnapshot.status = MeetupStatus.postponed
+
+    let snapshotStore = RecordingSnapshotStore(state: PersistedAppState(
+      snapshot: baselineSnapshot,
+      deliveredFingerprints: [],
+      lastRefreshAt: nil
+    ))
+    let notificationService = RecordingNotificationService()
+    let coordinator = RefreshCoordinator(
+      source: StubMeetupSource(snapshot: baselineSnapshot),
+      snapshotStore: snapshotStore,
+      changeDetector: ChangeDetector(),
+      notificationService: notificationService
+    )
+    let model = AppModel(
+      coordinator: coordinator,
+      scheduler: RefreshScheduler(intervalProvider: { .seconds(3600) }),
+      preferencesStore: AppPreferencesStore(userDefaults: defaults),
+      launchAtLoginManager: LaunchAtLoginManager()
+    )
+    model.snapshot = baselineSnapshot
+
+    await model.simulateDeveloperEvent(DeveloperInjectedEvent.meetupPostponed)
+
+    XCTAssertEqual(notificationService.notificationBatches.last?.first?.kind, .meetupCanceledOrPostponed)
+    XCTAssertEqual(model.snapshot?.status, MeetupStatus.postponed)
+    XCTAssertEqual(model.refreshState, RefreshState.idle)
   }
 
   private func makeSnapshot(
     slug: String,
     meetupURL: URL,
-    rsvpURL: URL?
+    rsvpURL: URL?,
+    venueName: String = "Venue",
+    venueAddress: String = "Address",
+    seatsRemaining: Int? = 30
   ) -> MeetupSnapshot {
     MeetupSnapshot(
       slug: slug,
@@ -150,11 +365,11 @@ final class RefreshCoordinatorTests: XCTestCase {
       description: nil,
       startsAt: Date(timeIntervalSince1970: 1_800_000_000),
       endsAt: Date(timeIntervalSince1970: 1_800_007_200),
-      venueName: "Venue",
-      venueAddress: "Address",
+      venueName: venueName,
+      venueAddress: venueAddress,
       meetupURL: meetupURL,
       rsvpURL: rsvpURL,
-      seatsRemaining: 30,
+      seatsRemaining: seatsRemaining,
       status: .upcoming,
       lastSyncedAt: Date(timeIntervalSince1970: 1_800_000_000)
     )
@@ -186,18 +401,19 @@ private final class FailingSnapshotStore: SnapshotStore {
 }
 
 private final class RecordingSnapshotStore: SnapshotStore {
-  private let loadedState: PersistedAppState
+  private var currentState: PersistedAppState
   private(set) var savedStates: [PersistedAppState] = []
 
   init(state: PersistedAppState) {
-    self.loadedState = state
+    self.currentState = state
   }
 
   func loadState() throws -> PersistedAppState {
-    loadedState
+    currentState
   }
 
   func saveState(_ state: PersistedAppState) throws {
+    currentState = state
     savedStates.append(state)
   }
 }
@@ -205,11 +421,13 @@ private final class RecordingSnapshotStore: SnapshotStore {
 @MainActor
 private final class RecordingNotificationService: NotificationService {
   private(set) var notifiedEvents: [MeetupChangeEvent] = []
+  private(set) var notificationBatches: [[MeetupChangeEvent]] = []
 
   func requestAuthorization() async {}
 
   func notify(events: [MeetupChangeEvent], snapshot: MeetupSnapshot, preferences: AppPreferences) async {
     notifiedEvents = events
+    notificationBatches.append(events)
   }
 }
 

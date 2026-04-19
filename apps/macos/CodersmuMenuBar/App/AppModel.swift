@@ -193,23 +193,21 @@ final class AppModel {
     } else if event == .nextMeetupCreated {
       baselineSnapshot = nil
     } else {
-      do {
-        baselineSnapshot = try await coordinator.fetchLatestSnapshot()
-      } catch {
-        refreshState = .failed("Couldn't load live meetup data for the simulation.")
-        return
-      }
+      // Best-effort: prefer a live baseline so the simulated diff stays close to
+      // real state, but fall back to a synthetic one when the source is down
+      // (offline, API outage) so developer simulations stay exercisable.
+      baselineSnapshot = (try? await coordinator.fetchLatestSnapshot()) ?? nil
     }
 
-    guard let simulatedSnapshot = event.applying(to: baselineSnapshot) else {
+    guard let scenario = event.scenario(from: baselineSnapshot) else {
       refreshState = .failed("Couldn't load live meetup data for the simulation.")
       return
     }
 
-    let outcome = await coordinator.refresh(
-      trigger: .manual,
-      preferences: preferences,
-      latestSnapshot: simulatedSnapshot
+    let outcome = await coordinator.simulate(
+      previousSnapshot: scenario.previousSnapshot,
+      latestSnapshot: scenario.latestSnapshot,
+      preferences: preferences
     )
 
     snapshot = outcome.snapshot
