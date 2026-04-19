@@ -28,7 +28,7 @@ The Raycast client lives in `apps/raycast`.
 
 - exploratory prototype, not a stable product
 - GitHub-first distribution, no npm release yet
-- the CLI, macOS app, and Raycast extension now prefer the hosted API at `https://codersmu.lepopquiz.app`
+- the CLI, macOS app, and Raycast extension now prefer the hosted API at `https://codersmu.cedpoilly.dev`
 - the public `coders.mu` API remains the shared fallback and upstream data source
 - CLI and Raycast use a 1-hour cache window during business hours by default, and a 6-hour window outside them
 
@@ -161,9 +161,11 @@ GitHub Actions already exist for CI and a future npm release path, but npm publi
 
 ## API Integration
 
-The shared core still uses the public `coders.mu` API at `https://coders.mu/api/public/v1/meetups` as its default source, but the shipped CLI, macOS app, and Raycast extension now opt themselves into the deployed hosted edge at `https://codersmu.lepopquiz.app`. The hosted service itself reads from the same upstream JSON contract, and `CODERSMU_HOSTED_API_BASE_URL` remains available as an explicit override if you need to point a client elsewhere.
+The shared core still uses the public `coders.mu` API at `https://coders.mu/api/public/v1/meetups` as its default source, but the shipped CLI, macOS app, and Raycast extension now opt themselves into the deployed hosted edge at `https://codersmu.cedpoilly.dev`. The hosted service itself reads from the same upstream JSON contract, and `CODERSMU_HOSTED_API_BASE_URL` remains available as an explicit override if you need to point a client elsewhere.
 
-For hosted API operations, see [apps/api/RUNBOOK.md](/Users/cedricpoilly/code/codersmu-clients/apps/api/RUNBOOK.md).
+For a diagram-based system overview and per-client fallback documentation, see [ARCHITECTURE.md](./ARCHITECTURE.md).
+
+For hosted API operations, see [apps/api/RUNBOOK.md](./apps/api/RUNBOOK.md).
 
 To smoke-test the live hosted deployment from this repo:
 

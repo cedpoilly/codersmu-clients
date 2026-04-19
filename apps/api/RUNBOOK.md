@@ -4,8 +4,8 @@ Operational notes for the deployed Coders.mu hosted API.
 
 ## Service
 
-- Public base URL: `https://codersmu.lepopquiz.app`
-- Health endpoint: `https://codersmu.lepopquiz.app/health`
+- Public base URL: `https://codersmu.cedpoilly.dev`
+- Health endpoint: `https://codersmu.cedpoilly.dev/health`
 - Coolify app: `codersmu-api`
 - Default upstream API: `https://coders.mu/api/public/v1`
 - Optional release env: `CODERSMU_RELEASE_SHA`
@@ -16,7 +16,7 @@ Operational notes for the deployed Coders.mu hosted API.
 Quick public check:
 
 ```bash
-curl -fsSL https://codersmu.lepopquiz.app/health
+curl -fsSL https://codersmu.cedpoilly.dev/health
 ```
 
 Full live smoke test from this repository:
@@ -87,7 +87,7 @@ If a fresh deployment is unhealthy:
 npm run check:hosted-api
 ```
 
-3. Confirm `https://codersmu.lepopquiz.app/health` returns `200`.
+3. Confirm `https://codersmu.cedpoilly.dev/health` returns `200`.
 
 Known recent good commits:
 
@@ -149,7 +149,7 @@ Design assumptions an operator should know about:
 
 If the service looks broken:
 
-1. Check `https://codersmu.lepopquiz.app/health`.
+1. Check `https://codersmu.cedpoilly.dev/health`.
 2. Run `npm run check:hosted-api`.
 3. Check the latest `Hosted API` GitHub Actions run if you need an externalized probe result.
 4. Inspect the latest Coolify runtime logs for:

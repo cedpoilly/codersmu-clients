@@ -28,7 +28,7 @@ import type { Meetup, MeetupListState, MeetupProvider, MeetupSession, MeetupSpea
 
 const require = createRequire(import.meta.url)
 const { version: CLI_VERSION } = require('../package.json') as { version: string }
-const DEFAULT_CLI_HOSTED_API_BASE_URL = 'https://codersmu.lepopquiz.app'
+const DEFAULT_CLI_HOSTED_API_BASE_URL = 'https://codersmu.cedpoilly.dev'
 
 interface CliOptions {
   json: boolean

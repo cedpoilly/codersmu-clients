@@ -8,7 +8,7 @@ import type { Meetup } from "./core";
 import { MeetupNotFoundError, isMeetupNotFoundError } from "./errors";
 
 const extensionCacheFile = join(environment.supportPath, "meetups.json");
-const extensionHostedApiBaseUrl = "https://codersmu.lepopquiz.app";
+const extensionHostedApiBaseUrl = "https://codersmu.cedpoilly.dev";
 
 function configureExtensionCache() {
   process.env.CODERSMU_CACHE_FILE = extensionCacheFile;

@@ -6,7 +6,7 @@ Raycast extension for browsing Coders.mu meetups from Raycast.
 
 This extension is still exploratory. It now reads meetup data through the shared Coders.mu core layer in this repository, using the same API-backed provider and cache model as the CLI.
 
-If you want the extension to prefer the deployed hosted API at `https://codersmu.lepopquiz.app`, set `CODERSMU_HOSTED_API_BASE_URL` at runtime. Otherwise the shared core keeps using the public `coders.mu` API by default.
+If you want the extension to prefer the deployed hosted API at `https://codersmu.cedpoilly.dev`, set `CODERSMU_HOSTED_API_BASE_URL` at runtime. Otherwise the shared core keeps using the public `coders.mu` API by default.
 
 The default `npm run lint` command only runs local ESLint and Prettier checks so development is not blocked on Raycast Store metadata. Before publishing, replace the placeholder `author` in `package.json` with a valid Raycast Store username and run `npm run lint:strict`.
 

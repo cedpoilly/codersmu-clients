@@ -1,7 +1,7 @@
 import Foundation
 
 struct CodersMuAPIClient {
-  private static let defaultHostedAPIBaseURLString = "https://codersmu.lepopquiz.app"
+  private static let defaultHostedAPIBaseURLString = "https://codersmu.cedpoilly.dev"
   private static let defaultRequestTimeout: TimeInterval = 10
   private static let hostedRequestTimeout: TimeInterval = 3
   private let session: URLSession

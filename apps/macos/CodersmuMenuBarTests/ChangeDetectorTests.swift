@@ -223,7 +223,7 @@ final class CodersMuAPIClientTests: XCTestCase {
     ])
 
     MockURLProtocol.requestHandler = { request in
-      guard request.url?.absoluteString == "https://codersmu.lepopquiz.app/meetups/next" else {
+      guard request.url?.absoluteString == "https://codersmu.cedpoilly.dev/meetups/next" else {
         throw URLError(.badURL)
       }
 
@@ -272,7 +272,7 @@ final class CodersMuAPIClientTests: XCTestCase {
     ])
 
     MockURLProtocol.requestHandler = { request in
-      guard request.url?.absoluteString == "https://codersmu.lepopquiz.app/meetups/next" else {
+      guard request.url?.absoluteString == "https://codersmu.cedpoilly.dev/meetups/next" else {
         throw URLError(.badURL)
       }
 

@@ -3,7 +3,7 @@
 import assert from 'node:assert/strict'
 import process from 'node:process'
 
-const DEFAULT_HOSTED_API_BASE_URL = 'https://codersmu.lepopquiz.app'
+const DEFAULT_HOSTED_API_BASE_URL = 'https://codersmu.cedpoilly.dev'
 const DEFAULT_TIMEOUT_SECONDS = 10
 const USER_AGENT = 'codersmu-hosted-api-check/0.2 (+https://coders.mu)'
 
