@@ -4,6 +4,7 @@ node_modules
 apps/*/node_modules
 apps/*/dist
 apps/*/raycast-env.d.ts
+apps/*/.codersmu-api/
 *.tsbuildinfo
 DerivedData
 *.xcuserstate
