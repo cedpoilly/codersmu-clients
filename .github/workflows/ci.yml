@@ -50,3 +50,39 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       - run: xcodebuild -project apps/macos/CodersmuMenuBar.xcodeproj -scheme CodersmuMenuBar -configuration Debug CODE_SIGNING_ALLOWED=NO test
+
+  deploy-artifact:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Produce self-contained API deploy tree
+        run: pnpm -w deploy:api "${RUNNER_TEMP}/codersmu-api-deploy"
+      - name: Boot server from the deploy tree and probe /health
+        run: |
+          set -euo pipefail
+
+          PORT=18787 node "${RUNNER_TEMP}/codersmu-api-deploy/dist/server.mjs" &
+          SERVER_PID=$!
+          trap 'kill "${SERVER_PID}" 2>/dev/null || true' EXIT
+
+          # Wait up to 10s for the server to bind.
+          for _ in $(seq 1 20); do
+            if curl -fsS "http://localhost:18787/health" >/dev/null; then
+              break
+            fi
+            sleep 0.5
+          done
+
+          payload=$(curl -fsS "http://localhost:18787/health")
+          echo "Health payload: ${payload}"
+          echo "${payload}" | grep -q '"ok":true'
+          echo "${payload}" | grep -q '"service":"codersmu-api"'
+          echo "${payload}" | grep -q '"version":"'
