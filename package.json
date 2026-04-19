@@ -30,6 +30,7 @@
     "check": "pnpm typecheck && pnpm --filter @codersmu/core check && pnpm --filter @codersmu/api check && pnpm build",
     "check:hosted-api": "node ./scripts/check-hosted-api.mjs",
     "deploy:api": "pnpm build:core && pnpm build:api && pnpm deploy --filter @codersmu/api --prod --legacy",
+    "macos:package": "bash apps/macos/scripts/package.sh",
     "release:check": "pnpm check && npm pack --dry-run"
   },
   "keywords": [

@@ -23,9 +23,13 @@ targets:
         PRODUCT_NAME: CodersmuMenuBar
         GENERATE_INFOPLIST_FILE: YES
         INFOPLIST_KEY_CFBundleDisplayName: Coders.mu
+        INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.developer-tools
         INFOPLIST_KEY_LSUIElement: YES
         INFOPLIST_KEY_NSPrincipalClass: NSApplication
         CODE_SIGN_STYLE: Automatic
+      configs:
+        Release:
+          ENABLE_HARDENED_RUNTIME: YES
   CodersmuMenuBarTests:
     type: bundle.unit-test
     platform: macOS

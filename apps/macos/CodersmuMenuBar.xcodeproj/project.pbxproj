@@ -19,6 +19,7 @@
 		4FDAC486475461F059F0C75B /* MeetupSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3DAC4245D8AA4EED41E63D84 /* MeetupSource.swift */; };
 		546EFD6A8F0E0E23902A6EEE /* AppPreferences.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29E3E367D5A7C02FDEDC54F8 /* AppPreferences.swift */; };
 		55C3D7843D5ABA841738894F /* SampleData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 97647D8F6708FB8BF70C1218 /* SampleData.swift */; };
+		6605A8A6FB5BBDE0B059D531 /* RefreshSchedulerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1C568D32BB344E70BA09E19 /* RefreshSchedulerTests.swift */; };
 		6BEC277645C64691F478EAD1 /* UserNotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6BB0CD3CA862A2575290B3E6 /* UserNotificationService.swift */; };
 		771616238A845ED5450FAA93 /* MeetupSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B75B405D7128AF1E5A5A095 /* MeetupSnapshot.swift */; };
 		7CFFAD376199F235D9AE9A79 /* AppLogger.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D0787C53EA7FDC4D55BF5CB /* AppLogger.swift */; };
@@ -30,9 +31,9 @@
 		9BECCF38324B488C004410E8 /* CodersMuAPIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5AB17609CA80FE8985733244 /* CodersMuAPIClient.swift */; };
 		9F96186E365F3E3CF6779D1C /* MenuBarRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9ED2C4AB51FD55ACE24917C7 /* MenuBarRootView.swift */; };
 		9FBEA86C1F51279EB72D7491 /* HTTPMeetupSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B035986FB25B08D2ED1331F /* HTTPMeetupSource.swift */; };
-		A14BB560F69343B0A271F28C /* RefreshCoordinatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A14BB55FF69343B0A271F28C /* RefreshCoordinatorTests.swift */; };
 		A690DA935092011AC0FD7912 /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03BF6B1B61F371677119EAAE /* NotificationService.swift */; };
 		A8FDA628624CDF8C0F82DA74 /* CodersmuMenuBarApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D3591D84D7A016D4723E00D /* CodersmuMenuBarApp.swift */; };
+		BF06596738D18D07FF5B88DA /* RefreshCoordinatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C4F026EE6520F40EC39B5AA /* RefreshCoordinatorTests.swift */; };
 		CD492B5FA1CB47AAB2C68FF8 /* ApplicationSupportSnapshotStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = F06D8F45F14F54D0983077E8 /* ApplicationSupportSnapshotStore.swift */; };
 		D3409892FC47B95F1CF19322 /* MenuBarLabelView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44EDA9BC6AEFD9200096C8DC /* MenuBarLabelView.swift */; };
 		D4E61F0FB2822EBAA951FCF1 /* ChangeDetectorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47F395CB7B3798DBA9B704DD /* ChangeDetectorTests.swift */; };
@@ -40,7 +41,6 @@
 		DDF2E67F2CD5D0AE3AB0BCC9 /* SnapshotStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9452818531A6E208BE501A7 /* SnapshotStore.swift */; };
 		ED60D61699B0CAD8A5FF9AA5 /* CliMeetupSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = 45FAD3D8BBFB2186113CD499 /* CliMeetupSource.swift */; };
 		F0C531966CFB5149B165594A /* RefreshScheduler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4BF17D92EAA07F46019DD008 /* RefreshScheduler.swift */; };
-		F6B1BA1C0A5D4C078C8E2202 /* RefreshSchedulerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F6B1BA1B0A5D4C078C8E2202 /* RefreshSchedulerTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -60,6 +60,7 @@
 		29E3E367D5A7C02FDEDC54F8 /* AppPreferences.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppPreferences.swift; sourceTree = "<group>"; };
 		29FFDA1F3B95E3AEBE03F8ED /* LaunchAtLoginManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaunchAtLoginManager.swift; sourceTree = "<group>"; };
 		2B75B405D7128AF1E5A5A095 /* MeetupSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeetupSnapshot.swift; sourceTree = "<group>"; };
+		2C4F026EE6520F40EC39B5AA /* RefreshCoordinatorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RefreshCoordinatorTests.swift; sourceTree = "<group>"; };
 		3DAC4245D8AA4EED41E63D84 /* MeetupSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeetupSource.swift; sourceTree = "<group>"; };
 		429D81066574B7DC0F86270A /* MeetupDTO.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeetupDTO.swift; sourceTree = "<group>"; };
 		42C2B6202FCA7419ED5ECD0C /* CodersmuMenuBarTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CodersmuMenuBarTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -81,15 +82,14 @@
 		8F96EB15D14402A1722A50AD /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		97647D8F6708FB8BF70C1218 /* SampleData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SampleData.swift; sourceTree = "<group>"; };
 		9ED2C4AB51FD55ACE24917C7 /* MenuBarRootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarRootView.swift; sourceTree = "<group>"; };
-		A14BB55FF69343B0A271F28C /* RefreshCoordinatorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RefreshCoordinatorTests.swift; sourceTree = "<group>"; };
 		B9452818531A6E208BE501A7 /* SnapshotStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnapshotStore.swift; sourceTree = "<group>"; };
 		BC62726386486D8238BEFA70 /* SampleMeetupSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SampleMeetupSource.swift; sourceTree = "<group>"; };
+		C1C568D32BB344E70BA09E19 /* RefreshSchedulerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RefreshSchedulerTests.swift; sourceTree = "<group>"; };
 		C565A503F4E98FACA8718F6E /* MenuBarStatusSectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarStatusSectionView.swift; sourceTree = "<group>"; };
 		CD5182E3BC2DC291C72944BA /* MeetupChangeEvent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeetupChangeEvent.swift; sourceTree = "<group>"; };
 		D0F358F67F13CC07667091BA /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		F06D8F45F14F54D0983077E8 /* ApplicationSupportSnapshotStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApplicationSupportSnapshotStore.swift; sourceTree = "<group>"; };
 		F9B5666665F3B4CBC4836852 /* RefreshCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RefreshCoordinator.swift; sourceTree = "<group>"; };
-		F6B1BA1B0A5D4C078C8E2202 /* RefreshSchedulerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RefreshSchedulerTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -118,8 +118,8 @@
 			isa = PBXGroup;
 			children = (
 				47F395CB7B3798DBA9B704DD /* ChangeDetectorTests.swift */,
-				A14BB55FF69343B0A271F28C /* RefreshCoordinatorTests.swift */,
-				F6B1BA1B0A5D4C078C8E2202 /* RefreshSchedulerTests.swift */,
+				2C4F026EE6520F40EC39B5AA /* RefreshCoordinatorTests.swift */,
+				C1C568D32BB344E70BA09E19 /* RefreshSchedulerTests.swift */,
 			);
 			path = CodersmuMenuBarTests;
 			sourceTree = "<group>";
@@ -369,8 +369,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				D4E61F0FB2822EBAA951FCF1 /* ChangeDetectorTests.swift in Sources */,
-				A14BB560F69343B0A271F28C /* RefreshCoordinatorTests.swift in Sources */,
-				F6B1BA1C0A5D4C078C8E2202 /* RefreshSchedulerTests.swift in Sources */,
+				BF06596738D18D07FF5B88DA /* RefreshCoordinatorTests.swift in Sources */,
+				6605A8A6FB5BBDE0B059D531 /* RefreshSchedulerTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -587,6 +587,7 @@
 				COMBINE_HIDPI_IMAGES = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = Coders.mu;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.developer-tools";
 				INFOPLIST_KEY_LSUIElement = YES;
 				INFOPLIST_KEY_NSPrincipalClass = NSApplication;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -605,8 +606,10 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = Coders.mu;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.developer-tools";
 				INFOPLIST_KEY_LSUIElement = YES;
 				INFOPLIST_KEY_NSPrincipalClass = NSApplication;
 				LD_RUNPATH_SEARCH_PATHS = (

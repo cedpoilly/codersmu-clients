@@ -11,6 +11,24 @@ Operational notes for the deployed Coders.mu hosted API.
 - Optional release env: `CODERSMU_RELEASE_SHA`
 - Optional durable cache env: `CODERSMU_API_CACHE_FILE`
 
+### TLS resolver note
+
+`codersmu.cedpoilly.dev` is a single-host deployment and should use the Coolify / Traefik HTTP ACME resolver, not the wildcard DNS-challenge resolver.
+
+For this app route, the effective Traefik label needs to resolve to:
+
+```text
+traefik.http.routers.https-0-kog44s4c4cs0csog8cwgc400.tls.certresolver=letsencrypt-http
+```
+
+Why this matters:
+
+- the server-wide `letsencrypt` resolver was configured for a Namecheap DNS challenge
+- `cedpoilly.dev` is managed in DNSimple
+- using the wrong resolver caused repeated ACME failures for `codersmu.cedpoilly.dev`
+
+If the custom domain ever starts serving an invalid fallback certificate again, check the generated app route first before changing DNS.
+
 ## Verify
 
 Quick public check:
