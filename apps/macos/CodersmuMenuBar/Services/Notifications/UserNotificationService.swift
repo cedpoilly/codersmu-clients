@@ -1,5 +1,5 @@
 import Foundation
-import UserNotifications
+@preconcurrency import UserNotifications
 
 final class UserNotificationService: NotificationService {
   private let center: UNUserNotificationCenter
