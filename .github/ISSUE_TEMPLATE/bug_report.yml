@@ -1,0 +1,74 @@
+name: Bug report
+description: Report a reproducible bug in the CLI, hosted API, Raycast extension, or macOS app.
+title: "[Bug] "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting this. Please include enough detail for someone else to reproduce the issue quickly.
+
+  - type: dropdown
+    id: surface
+    attributes:
+      label: Affected surface
+      description: Where did you hit the problem?
+      options:
+        - Hosted API
+        - CLI
+        - Raycast extension
+        - macOS app
+        - Documentation
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: What happened?
+      description: Describe the bug and the observed behavior.
+      placeholder: When I..., the app/API/command...
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      description: List the shortest reliable path to reproduce the issue.
+      placeholder: |
+        1. Run ...
+        2. Open ...
+        3. Click ...
+        4. Observe ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      placeholder: It should have...
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs, screenshots, or failing output
+      description: Paste terminal output, stack traces, screenshots, or links here.
+      render: shell
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Include versions or setup details that matter.
+      placeholder: |
+        - macOS:
+        - Node/pnpm:
+        - Xcode:
+        - App build or commit:
+

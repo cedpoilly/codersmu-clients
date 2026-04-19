@@ -1,0 +1,55 @@
+name: Feature request
+description: Propose a new feature or improvement for the CLI, hosted API, Raycast extension, or macOS app.
+title: "[Feature] "
+labels:
+  - enhancement
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please describe the user-facing problem first, then the improvement you want.
+
+  - type: dropdown
+    id: surface
+    attributes:
+      label: Area
+      description: Which part of the project does this affect most?
+      options:
+        - Hosted API
+        - CLI
+        - Raycast extension
+        - macOS app
+        - Documentation
+        - OSS / contributor experience
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem are you trying to solve?
+      placeholder: Right now it is hard to...
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      placeholder: It would help if...
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Optional. Note other approaches, workarounds, or tradeoffs.
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: Add examples, screenshots, links, or related issues if relevant.
+

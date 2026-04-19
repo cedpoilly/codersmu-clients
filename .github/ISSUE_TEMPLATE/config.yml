@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Contribution guide
+    url: https://github.com/cedpoilly/codersmu-clients/blob/main/CONTRIBUTING.md
+    about: Read the repo setup, workflow, and contribution guidance before opening an issue.
+  - name: Security policy
+    url: https://github.com/cedpoilly/codersmu-clients/blob/main/SECURITY.md
+    about: Please do not report security issues in public issues.
