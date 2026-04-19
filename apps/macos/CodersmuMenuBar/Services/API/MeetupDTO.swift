@@ -149,7 +149,7 @@ struct MeetupDTO: Decodable {
   let links: MeetupLinksDTO
 
   func toSnapshot(lastSyncedAt: Date) throws -> MeetupSnapshot {
-    guard let meetupURL = URL(string: links.meetup ?? "") else {
+    guard let meetupURL = normalizedHTTPSURL(links.meetup) else {
       throw APIError.invalidPayload("Coders.mu returned an unusable meetup URL for \(id).")
     }
 
@@ -173,7 +173,7 @@ struct MeetupDTO: Decodable {
   }
 
   private func normalizedRsvpURL(meetupURL: URL) -> URL? {
-    if let rsvp = links.rsvp, let url = URL(string: rsvp) {
+    if let url = normalizedHTTPSURL(links.rsvp) {
       return url
     }
 
@@ -310,8 +310,8 @@ struct HostedMeetupDTO: Decodable {
         meetup: meetupURL,
         recording: nil,
         slides: nil,
-        map: mapUrl,
-        parking: parkingLocation,
+        map: normalizedHTTPSURLString(mapUrl),
+        parking: normalizedHTTPSURLString(parkingLocation),
         rsvp: normalizedRsvpLink(meetupURL: meetupURL)
       )
     )
@@ -407,7 +407,7 @@ struct HostedMeetupDTO: Decodable {
   }
 
   private func normalizedRsvpLink(meetupURL: String) -> String? {
-    if let rsvpLink, !rsvpLink.isEmpty {
+    if let rsvpLink = normalizedHTTPSURLString(rsvpLink) {
       return rsvpLink
     }
 
@@ -531,8 +531,8 @@ struct CodersMuMeetupDTO: Decodable {
         meetup: meetupURL,
         recording: nil,
         slides: nil,
-        map: mapUrl,
-        parking: parkingLocation,
+        map: normalizedHTTPSURLString(mapUrl),
+        parking: normalizedHTTPSURLString(parkingLocation),
         rsvp: normalizedRsvpLink(meetupURL: meetupURL)
       )
     )
@@ -594,7 +594,7 @@ struct CodersMuMeetupDTO: Decodable {
   }
 
   private func normalizedRsvpLink(meetupURL: String) -> String? {
-    if let rsvpLink, !rsvpLink.isEmpty {
+    if let rsvpLink = normalizedHTTPSURLString(rsvpLink) {
       return rsvpLink
     }
 
@@ -674,6 +674,27 @@ private func normalizeLocationValue(_ value: String?) -> String? {
   }
 
   return trimmed
+}
+
+private func normalizedHTTPSURLString(_ value: String?) -> String? {
+  guard
+    let trimmed = value?.trimmingCharacters(in: .whitespacesAndNewlines),
+    !trimmed.isEmpty,
+    let url = URL(string: trimmed),
+    url.scheme?.lowercased() == "https"
+  else {
+    return nil
+  }
+
+  return url.absoluteString
+}
+
+private func normalizedHTTPSURL(_ value: String?) -> URL? {
+  guard let normalized = normalizedHTTPSURLString(value) else {
+    return nil
+  }
+
+  return URL(string: normalized)
 }
 
 private func slugify(_ value: String) -> String {

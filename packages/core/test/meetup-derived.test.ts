@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { getMeetupEndsAt, getMeetupLifecycleStatus, getMeetupStartsAt } from '../src/meetup-derived'
+import { getMeetupEndsAt, getMeetupLifecycleStatus, getMeetupLinks, getMeetupStartsAt } from '../src/meetup-derived'
 import type { Meetup } from '../src/types'
 
 const baseMeetup: Meetup = {
@@ -69,5 +69,37 @@ describe('meetup-derived schedule helpers', () => {
     }
 
     expect(getMeetupLifecycleStatus(dateOnlyMeetup)).toBe('completed')
+  })
+
+  it('falls back to the meetup page when RSVP is open but the upstream RSVP link is unsafe', () => {
+    const unsafeMeetup: Meetup = {
+      ...baseMeetup,
+      acceptingRsvp: 1,
+      rsvpLink: 'javascript:alert(1)',
+      mapUrl: 'http://maps.example.com/meetup',
+      parkingLocation: 'data:text/plain,hello',
+    }
+
+    expect(getMeetupLinks(unsafeMeetup)).toEqual({
+      meetup: 'https://coders.mu/meetup/future-meetup',
+      rsvp: 'https://coders.mu/meetup/future-meetup',
+      map: undefined,
+      parking: undefined,
+    })
+  })
+
+  it('still drops an unsafe RSVP link when the meetup is not accepting RSVPs', () => {
+    const closedMeetup: Meetup = {
+      ...baseMeetup,
+      acceptingRsvp: 0,
+      rsvpLink: 'javascript:alert(1)',
+    }
+
+    expect(getMeetupLinks(closedMeetup)).toEqual({
+      meetup: 'https://coders.mu/meetup/future-meetup',
+      rsvp: undefined,
+      map: undefined,
+      parking: undefined,
+    })
   })
 })

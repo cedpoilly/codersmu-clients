@@ -247,6 +247,55 @@ final class CodersMuAPIClientTests: XCTestCase {
     XCTAssertEqual(response.meetup?.title, "Hosted Meetup")
     XCTAssertEqual(response.meetup?.links.rsvp, "https://lu.ma/hosted-meetup")
   }
+
+  func testFetchNextMeetupResponseDropsUnsafeHostedLinks() async throws {
+    let hostedJSON = try makeJSONString([
+      "meetup": [
+        "id": "hosted-meetup",
+        "title": "Hosted Meetup",
+        "description": "Served by the hosted API.",
+        "date": "2099-06-18",
+        "startTime": "10:00",
+        "endTime": "14:00",
+        "venue": "Hosted Venue",
+        "location": "Moka",
+        "status": "published",
+        "sessions": [],
+        "sponsors": [],
+        "attendeeCount": 42,
+        "seatsAvailable": 12,
+        "acceptingRsvp": 1,
+        "rsvpLink": "javascript:alert(1)",
+        "mapUrl": "http://maps.example.com/hosted-meetup",
+        "parkingLocation": "data:text/plain,parking",
+      ],
+    ])
+
+    MockURLProtocol.requestHandler = { request in
+      guard request.url?.absoluteString == "https://codersmu.lepopquiz.app/meetups/next" else {
+        throw URLError(.badURL)
+      }
+
+      let response = HTTPURLResponse(
+        url: request.url!,
+        statusCode: 200,
+        httpVersion: nil,
+        headerFields: ["Content-Type": "application/json; charset=utf-8"]
+      )!
+      return (response, Data(hostedJSON.utf8))
+    }
+
+    let configuration = URLSessionConfiguration.ephemeral
+    configuration.protocolClasses = [MockURLProtocol.self]
+    let session = URLSession(configuration: configuration)
+    let client = CodersMuAPIClient(session: session)
+
+    let response = try await client.fetchNextMeetupResponse()
+
+    XCTAssertEqual(response.meetup?.links.rsvp, "https://coders.mu/meetup/hosted-meetup")
+    XCTAssertNil(response.meetup?.links.map)
+    XCTAssertNil(response.meetup?.links.parking)
+  }
 }
 
 final class CliMeetupSourceTests: XCTestCase {

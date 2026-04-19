@@ -1,18 +1,23 @@
+import { mkdir, readFile, writeFile } from 'node:fs/promises'
+import { dirname, resolve } from 'node:path'
+
 import {
   CacheMeetupProvider,
   createMeetupListResponse,
   createMeetupResponse,
   createNextMeetupResponse,
   fetchFrontendMuMeetups,
+  isMeetupCacheFresh,
   getCurrentOrNextMeetup,
   getMeetupsForList,
 } from '@codersmu/core'
-import type { MeetupListState, MeetupListResponse, MeetupResponse, NextMeetupResponse } from '@codersmu/core'
+import type { MeetupCache, MeetupListState, MeetupListResponse, MeetupResponse, NextMeetupResponse } from '@codersmu/core'
 
 import { logEvent } from './logger'
 
 const API_CACHE_TTL_MS = 60_000
 const DEFAULT_UPSTREAM_API_BASE_URL = 'https://coders.mu/api/public/v1'
+const DEFAULT_PROVIDER_CACHE_FILE = resolve(process.cwd(), '.codersmu-api', 'meetups-cache.json')
 
 let cachedProvider: CacheMeetupProvider | undefined
 let cachedProviderExpiresAt = 0
@@ -20,6 +25,46 @@ let providerLoadPromise: Promise<CacheMeetupProvider> | undefined
 
 function resolveUpstreamApiBaseUrl(): string {
   return (process.env.CODERSMU_UPSTREAM_API_BASE_URL ?? DEFAULT_UPSTREAM_API_BASE_URL).replace(/\/+$/, '')
+}
+
+function resolveProviderCacheFile(): string {
+  const configured = process.env.CODERSMU_API_CACHE_FILE?.trim()
+  return configured || DEFAULT_PROVIDER_CACHE_FILE
+}
+
+async function writeProviderCache(cache: MeetupCache): Promise<void> {
+  const cacheFile = resolveProviderCacheFile()
+  await mkdir(dirname(cacheFile), { recursive: true })
+  await writeFile(cacheFile, `${JSON.stringify(cache, null, 2)}\n`, 'utf8')
+}
+
+async function readProviderCache(): Promise<MeetupCache | undefined> {
+  try {
+    const content = await readFile(resolveProviderCacheFile(), 'utf8')
+    return JSON.parse(content) as MeetupCache
+  }
+  catch {
+    return undefined
+  }
+}
+
+async function hydrateProviderFromDiskCache(): Promise<CacheMeetupProvider | undefined> {
+  const cache = await readProviderCache()
+  if (!cache) {
+    return undefined
+  }
+
+  if (!isMeetupCacheFresh(cache)) {
+    return undefined
+  }
+
+  logEvent('warn', 'provider_disk_cache_loaded', {
+    cacheFile: resolveProviderCacheFile(),
+    scrapedAt: cache.scrapedAt,
+    meetupCount: cache.meetups.length,
+  })
+
+  return new CacheMeetupProvider(cache)
 }
 
 async function loadProvider(): Promise<CacheMeetupProvider> {
@@ -41,6 +86,16 @@ async function loadProvider(): Promise<CacheMeetupProvider> {
       })
     },
   })
+
+  try {
+    await writeProviderCache(cache)
+  }
+  catch (error) {
+    logEvent('warn', 'provider_disk_cache_write_failed', {
+      cacheFile: resolveProviderCacheFile(),
+      error,
+    })
+  }
 
   logEvent('info', 'provider_refresh_succeeded', {
     upstreamApiBaseUrl,
@@ -75,7 +130,7 @@ async function buildProvider(now = Date.now()): Promise<CacheMeetupProvider> {
         })
         return provider
       })
-      .catch((error) => {
+      .catch(async (error) => {
         logEvent('error', 'provider_refresh_failed', {
           error,
           hasCachedProvider: Boolean(cachedProvider),
@@ -88,6 +143,16 @@ async function buildProvider(now = Date.now()): Promise<CacheMeetupProvider> {
             expiresAt: new Date(cachedProviderExpiresAt).toISOString(),
           })
           return cachedProvider
+        }
+
+        const diskCachedProvider = await hydrateProviderFromDiskCache()
+        if (diskCachedProvider) {
+          cachedProvider = diskCachedProvider
+          cachedProviderExpiresAt = Date.now() + API_CACHE_TTL_MS
+          logEvent('warn', 'provider_disk_cache_reused', {
+            expiresAt: new Date(cachedProviderExpiresAt).toISOString(),
+          })
+          return diskCachedProvider
         }
 
         throw error

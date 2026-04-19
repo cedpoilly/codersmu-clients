@@ -1,3 +1,7 @@
+import { mkdtemp, mkdir, writeFile } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import type { MeetupCache } from '@codersmu/core'
@@ -39,6 +43,7 @@ afterEach(() => {
   delete process.env.CODERSMU_UPSTREAM_API_BASE_URL
   delete process.env.CODERSMU_API_LOG_LEVEL
   delete process.env.CODERSMU_RELEASE_SHA
+  delete process.env.CODERSMU_API_CACHE_FILE
   vi.clearAllMocks()
   vi.resetModules()
 })
@@ -206,6 +211,65 @@ describe('handleRequest', () => {
     }))
     expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('"event":"provider_refresh_failed"'))
     expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('"event":"provider_stale_cache_reused"'))
+
+    vi.useRealTimers()
+  })
+
+  it('reuses the persisted disk cache after a cold-start refresh failure', async () => {
+    const cacheDir = await mkdtemp(join(tmpdir(), 'codersmu-api-cache-'))
+    const cacheFile = join(cacheDir, 'meetups-cache.json')
+    process.env.CODERSMU_API_CACHE_FILE = cacheFile
+    await mkdir(cacheDir, { recursive: true })
+    await writeFile(cacheFile, `${JSON.stringify(sampleCache, null, 2)}\n`, 'utf8')
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2099-04-18T06:30:00.000Z'))
+
+    resetFetchFrontendMuMeetupsMock()
+    fetchFrontendMuMeetupsMock.mockRejectedValueOnce(new Error('frontend api down'))
+
+    const { handleRequest } = await import('../src/server')
+
+    const response = await handleRequest(new Request('http://localhost/meetups/next'))
+    const payload = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(payload).toEqual({
+      meetup: sampleCache.meetups[0],
+    })
+    expect(fetchFrontendMuMeetupsMock).toHaveBeenCalledTimes(1)
+    expect(fetchFrontendMuMeetupsMock).toHaveBeenCalledWith({
+      apiBaseUrl: 'https://coders.mu/api/public/v1',
+      onDetailFailure: expect.any(Function),
+    })
+
+    vi.useRealTimers()
+  })
+
+  it('rejects a stale persisted disk cache after a cold-start refresh failure', async () => {
+    const cacheDir = await mkdtemp(join(tmpdir(), 'codersmu-api-cache-'))
+    const cacheFile = join(cacheDir, 'meetups-cache.json')
+    process.env.CODERSMU_API_CACHE_FILE = cacheFile
+    await mkdir(cacheDir, { recursive: true })
+    await writeFile(cacheFile, `${JSON.stringify({
+      ...sampleCache,
+      scrapedAt: '2099-04-18T06:00:00.000Z',
+    }, null, 2)}\n`, 'utf8')
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2099-04-18T07:30:01.000Z'))
+
+    resetFetchFrontendMuMeetupsMock()
+    fetchFrontendMuMeetupsMock.mockRejectedValueOnce(new Error('frontend api down'))
+
+    const { handleRequest } = await import('../src/server')
+
+    const response = await handleRequest(new Request('http://localhost/meetups/next'))
+    const payload = await response.json()
+
+    expect(response.status).toBe(500)
+    expect(payload).toEqual({
+      error: 'Internal server error.',
+    })
+    expect(fetchFrontendMuMeetupsMock).toHaveBeenCalledTimes(1)
 
     vi.useRealTimers()
   })

@@ -24,6 +24,7 @@ The hosted API now emits structured JSON logs to stdout/stderr so Coolify can ca
 - upstream refresh start/success/failure
 - in-memory cache hits
 - stale-cache reuse after upstream refresh failures
+- cold-start disk-cache reuse after upstream refresh failures
 
 Use `CODERSMU_API_LOG_LEVEL` to control verbosity:
 
@@ -41,5 +42,8 @@ The main event names to watch during incidents are:
 - `provider_refresh_succeeded`
 - `provider_refresh_failed`
 - `provider_stale_cache_reused`
+- `provider_disk_cache_loaded`
+- `provider_disk_cache_reused`
+- `provider_disk_cache_write_failed`
 
 For deploy, verify, rollback, and first-triage steps, see [RUNBOOK.md](/Users/cedricpoilly/code/codersmu-clients/apps/api/RUNBOOK.md).

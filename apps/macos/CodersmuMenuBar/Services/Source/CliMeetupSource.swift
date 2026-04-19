@@ -209,7 +209,7 @@ struct CliMeetup: Decodable {
   }
 
   private var normalizedRsvpURL: URL? {
-    if let rsvpLink, let url = URL(string: rsvpLink) {
+    if let url = normalizedHTTPSURL(rsvpLink) {
       return url
     }
 
@@ -358,7 +358,8 @@ private struct LegacyCliMeetup: Decodable {
       .compactMap { $0 }
       .joined(separator: ", ")
       .trimmedNilIfEmpty
-    let meetupURL = URL(string: links?.meetup?.trimmedNilIfEmpty ?? "https://coders.mu/meetup/\(derivedSlug)")!
+    let meetupURL = normalizedHTTPSURL(links?.meetup?.trimmedNilIfEmpty)
+      ?? URL(string: "https://coders.mu/meetup/\(derivedSlug)")!
 
     return MeetupSnapshot(
       slug: derivedSlug,
@@ -378,7 +379,7 @@ private struct LegacyCliMeetup: Decodable {
 
   private var normalizedRsvpURL: URL? {
     if let rsvp = links?.rsvp?.trimmedNilIfEmpty {
-      return URL(string: rsvp)
+      return normalizedHTTPSURL(rsvp)
     }
 
     guard acceptingRsvp?.boolValue ?? false else {
@@ -386,7 +387,7 @@ private struct LegacyCliMeetup: Decodable {
     }
 
     if let meetup = links?.meetup?.trimmedNilIfEmpty {
-      return URL(string: meetup)
+      return normalizedHTTPSURL(meetup)
     }
 
     guard let slug = slug?.trimmedNilIfEmpty else {
@@ -429,6 +430,19 @@ private enum CliMeetupSourceError: LocalizedError {
       return message
     }
   }
+}
+
+private func normalizedHTTPSURL(_ value: String?) -> URL? {
+  guard
+    let trimmed = value?.trimmingCharacters(in: .whitespacesAndNewlines),
+    !trimmed.isEmpty,
+    let url = URL(string: trimmed),
+    url.scheme?.lowercased() == "https"
+  else {
+    return nil
+  }
+
+  return url
 }
 
 private extension String {

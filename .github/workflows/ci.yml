@@ -28,3 +28,25 @@ jobs:
         run: |
           node apps/raycast/scripts/sync-core.mjs
           git diff --exit-code -- apps/raycast/vendor
+
+  raycast:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/raycast
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: apps/raycast/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm test
+
+  macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v5
+      - run: xcodebuild -project apps/macos/CodersmuMenuBar.xcodeproj -scheme CodersmuMenuBar -configuration Debug CODE_SIGNING_ALLOWED=NO test

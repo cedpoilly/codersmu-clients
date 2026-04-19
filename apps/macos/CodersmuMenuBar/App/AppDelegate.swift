@@ -24,7 +24,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
     didReceive response: UNNotificationResponse
   ) async {
     guard let rawURL = response.notification.request.content.userInfo["meetupURL"] as? String,
-          let url = URL(string: rawURL)
+          let url = URL(string: rawURL),
+          url.scheme?.lowercased() == "https"
     else {
       return
     }

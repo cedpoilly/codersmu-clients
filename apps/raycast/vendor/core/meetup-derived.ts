@@ -21,6 +21,21 @@ export interface MeetupLinks {
   parking?: string
 }
 
+function normalizeHttpsUrl(value: string | null | undefined): string | undefined {
+  const trimmed = value?.trim()
+  if (!trimmed) {
+    return undefined
+  }
+
+  try {
+    const url = new URL(trimmed)
+    return url.protocol === 'https:' ? url.toString() : undefined
+  }
+  catch {
+    return undefined
+  }
+}
+
 function decodeHtmlEntities(value: string): string {
   return value.replaceAll(/&(#(\d+)|#x([0-9a-fA-F]+)|[a-zA-Z]+);/g, (entity, _whole, decimal, hex) => {
     if (decimal) {
@@ -230,11 +245,13 @@ export function getMeetupLocationParts(meetup: Meetup): MeetupLocationParts {
 }
 
 export function getMeetupLinks(meetup: Meetup): MeetupLinks {
+  const meetupUrl = `${SITE_BASE_URL}/meetup/${encodeURIComponent(meetup.id)}`
+
   return {
-    meetup: `${SITE_BASE_URL}/meetup/${encodeURIComponent(meetup.id)}`,
-    rsvp: meetup.rsvpLink ?? undefined,
-    map: meetup.mapUrl ?? undefined,
-    parking: meetup.parkingLocation ?? undefined,
+    meetup: meetupUrl,
+    rsvp: normalizeHttpsUrl(meetup.rsvpLink) ?? (meetup.acceptingRsvp ? meetupUrl : undefined),
+    map: normalizeHttpsUrl(meetup.mapUrl),
+    parking: normalizeHttpsUrl(meetup.parkingLocation),
   }
 }
 

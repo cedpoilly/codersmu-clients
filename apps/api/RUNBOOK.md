@@ -9,6 +9,7 @@ Operational notes for the deployed Coders.mu hosted API.
 - Coolify app: `codersmu-api`
 - Default upstream API: `https://coders.mu/api/public/v1`
 - Optional release env: `CODERSMU_RELEASE_SHA`
+- Optional durable cache env: `CODERSMU_API_CACHE_FILE`
 
 ## Verify
 
@@ -105,6 +106,9 @@ The service emits structured JSON logs. Key events:
 - `provider_refresh_succeeded`
 - `provider_refresh_failed`
 - `provider_stale_cache_reused`
+- `provider_disk_cache_loaded`
+- `provider_disk_cache_reused`
+- `provider_disk_cache_write_failed`
 
 Useful interpretations:
 
@@ -120,6 +124,7 @@ Primary runtime variables:
 - `CODERSMU_UPSTREAM_API_BASE_URL`
 - `CODERSMU_API_LOG_LEVEL`
 - `CODERSMU_RELEASE_SHA`
+- `CODERSMU_API_CACHE_FILE`
 
 Suggested production values:
 
@@ -127,6 +132,7 @@ Suggested production values:
 - `CODERSMU_UPSTREAM_API_BASE_URL=https://coders.mu/api/public/v1`
 - `CODERSMU_API_LOG_LEVEL=info`
 - `CODERSMU_RELEASE_SHA=<git-sha>`
+- `CODERSMU_API_CACHE_FILE=/data/codersmu-api/meetups-cache.json`
 
 ## Threat Model
 
