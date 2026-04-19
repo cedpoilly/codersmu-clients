@@ -37,10 +37,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
 
   @MainActor
   private func configureApplicationIcon() {
-    guard let iconURL = Bundle.main.url(forResource: "AppIcon", withExtension: "icns"),
-          let icon = NSImage(contentsOf: iconURL)
-    else {
-      AppLog.notifications.error("Failed to load AppIcon.icns from the app bundle.")
+    // Pull the icon through the asset-catalog lookup rather than probing for a
+    // hardcoded AppIcon.icns in Resources. actool usually emits that file, but
+    // the asset-catalog entry is the contract — NSImage(named:) resolves it
+    // whichever compiled representation Xcode chose.
+    guard let icon = NSImage(named: "AppIcon") else {
+      AppLog.notifications.error("Failed to load the AppIcon asset from the asset catalog.")
       return
     }
 
