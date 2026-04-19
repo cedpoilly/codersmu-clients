@@ -159,7 +159,7 @@ jobs:
           CODERSMU_MACOS_ARTIFACT_LABEL: ${{ github.event_name == 'release' && github.event.release.tag_name || format('manual-{0}', github.sha) }}
         run: bash apps/macos/scripts/package.sh
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: codersmu-macos-package
           path: apps/macos/dist/*.zip
