@@ -106,9 +106,9 @@ describe('handleRequest', () => {
     const response = await handleRequest(new Request('http://localhost/meetups?state=all'))
 
     expect(response.status).toBe(200)
-    expect(fetchFrontendMuMeetupsMock).toHaveBeenCalledWith({
+    expect(fetchFrontendMuMeetupsMock).toHaveBeenCalledWith(expect.objectContaining({
       apiBaseUrl: 'https://frontendmu.example/api/public/v1',
-    })
+    }))
   })
 
   it('returns the standardized meetup list response', async () => {
@@ -198,12 +198,12 @@ describe('handleRequest', () => {
       meetup: sampleCache.meetups[0],
     })
     expect(fetchFrontendMuMeetupsMock).toHaveBeenCalledTimes(2)
-    expect(fetchFrontendMuMeetupsMock).toHaveBeenNthCalledWith(1, {
+    expect(fetchFrontendMuMeetupsMock).toHaveBeenNthCalledWith(1, expect.objectContaining({
       apiBaseUrl: 'https://coders.mu/api/public/v1',
-    })
-    expect(fetchFrontendMuMeetupsMock).toHaveBeenNthCalledWith(2, {
+    }))
+    expect(fetchFrontendMuMeetupsMock).toHaveBeenNthCalledWith(2, expect.objectContaining({
       apiBaseUrl: 'https://coders.mu/api/public/v1',
-    })
+    }))
     expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('"event":"provider_refresh_failed"'))
     expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('"event":"provider_stale_cache_reused"'))
 

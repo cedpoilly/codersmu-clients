@@ -84,7 +84,20 @@ export async function handleRequest(request: Request): Promise<Response> {
     }
 
     if (pathname.startsWith('/meetups/')) {
-      const slug = decodeURIComponent(pathname.slice('/meetups/'.length))
+      let slug: string
+      try {
+        slug = decodeURIComponent(pathname.slice('/meetups/'.length))
+      }
+      catch {
+        response = applyResponseMetadata(Response.json({ error: 'Invalid meetup identifier.' }, { status: 400 }))
+        return response
+      }
+
+      if (!/^[a-zA-Z0-9-]{1,128}$/.test(slug)) {
+        response = applyResponseMetadata(Response.json({ error: 'Invalid meetup identifier.' }, { status: 400 }))
+        return response
+      }
+
       response = applyResponseMetadata(await handleMeetupBySlugRequest(slug))
       return response
     }
@@ -100,8 +113,7 @@ export async function handleRequest(request: Request): Promise<Response> {
       error,
     })
 
-    const message = error instanceof Error ? error.message : 'Unexpected server error.'
-    response = applyResponseMetadata(Response.json({ error: message }, { status: 500 }))
+    response = applyResponseMetadata(Response.json({ error: 'Internal server error.' }, { status: 500 }))
     return response
   }
   finally {

@@ -24,3 +24,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm check
       - run: npm pack --dry-run
+      - name: Verify Raycast vendor is in sync with packages/core
+        run: |
+          node apps/raycast/scripts/sync-core.mjs
+          git diff --exit-code -- apps/raycast/vendor

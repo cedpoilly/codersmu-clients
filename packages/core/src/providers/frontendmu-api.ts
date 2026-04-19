@@ -5,6 +5,7 @@ const FETCH_TIMEOUT_MS = 10_000
 
 export interface FetchFrontendMuMeetupsOptions {
   apiBaseUrl?: string
+  onDetailFailure?: (meetupId: string, error: unknown) => void
 }
 
 interface RawSpeaker {
@@ -179,7 +180,8 @@ export async function fetchFrontendMuMeetups(options?: FetchFrontendMuMeetupsOpt
     try {
       return await fetchMeetupDetail(meetupsApiUrl, meetup.id)
     }
-    catch {
+    catch (error) {
+      options?.onDetailFailure?.(meetup.id, error)
       return meetup
     }
   })

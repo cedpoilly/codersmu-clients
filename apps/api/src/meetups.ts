@@ -31,7 +31,16 @@ async function loadProvider(): Promise<CacheMeetupProvider> {
     cacheTtlMs: API_CACHE_TTL_MS,
   })
 
-  const cache = await fetchFrontendMuMeetups({ apiBaseUrl: upstreamApiBaseUrl })
+  const cache = await fetchFrontendMuMeetups({
+    apiBaseUrl: upstreamApiBaseUrl,
+    onDetailFailure: (meetupId, error) => {
+      logEvent('warn', 'provider_detail_fetch_failed', {
+        meetupId,
+        upstreamApiBaseUrl,
+        error,
+      })
+    },
+  })
 
   logEvent('info', 'provider_refresh_succeeded', {
     upstreamApiBaseUrl,

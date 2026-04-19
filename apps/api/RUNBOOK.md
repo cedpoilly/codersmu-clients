@@ -128,6 +128,17 @@ Suggested production values:
 - `CODERSMU_API_LOG_LEVEL=info`
 - `CODERSMU_RELEASE_SHA=<git-sha>`
 
+## Threat Model
+
+Design assumptions an operator should know about:
+
+- **Unauthenticated public read-only API.** There is no auth layer. Anyone on the public internet can call `/meetups`, `/meetups/next`, `/meetups/<slug>`. The service returns only data that is already public on `https://coders.mu`.
+- **No application-level rate limiting.** Rate limiting is expected to live at the edge (Coolify / reverse proxy). The 60-second in-memory cache bounds upstream impact: a single warm API instance makes at most one upstream refresh per minute regardless of inbound traffic.
+- **Error responses are redacted.** On a 500, the client sees only `{"error":"Internal server error."}`. The underlying cause (stack, upstream host, TLS details) stays in structured logs. Do not reintroduce `error.message` into 5xx response bodies.
+- **Slug input is bounded.** `/meetups/<slug>` rejects anything outside `^[a-zA-Z0-9-]{1,128}$` with a `400`, without calling the provider.
+- **`x-codersmu-service`, `x-codersmu-version`, and `x-codersmu-release-sha` are advertised on every response.** This is an intentional operations trade-off (ops visibility > fingerprint hiding). If you ever front the service with a CDN that doesn't scrub, that's acceptable — the code is public.
+- **Upstream detail fetches fail soft.** If `fetchMeetupDetail` fails for a specific meetup, the provider falls back to the list-only shape and logs `provider_detail_fetch_failed`. Recurring entries for the same `meetupId` mean persistent upstream degradation on that record, not a hosted-API bug.
+
 ## First Triage
 
 If the service looks broken:
