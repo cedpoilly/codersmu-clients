@@ -47,6 +47,32 @@ Expected health response:
 
 If `CODERSMU_RELEASE_SHA` is set in the runtime environment, `/health` and the `x-codersmu-release-sha` header expose the live deployed revision directly.
 
+### Build artifacts
+
+`apps/api` is built by `tsdown`. The bundle keeps `@codersmu/core` as an external `import`, so the runtime environment must resolve it.
+
+**Do not** ship `apps/api/dist/` plus `apps/api/node_modules/` from a plain workspace install. `pnpm install` at the repo root creates `apps/api/node_modules/@codersmu/core` as a symlink into the monorepo (`../../../../packages/core`). If that target is not present on the deploy host, Node fails with `ERR_MODULE_NOT_FOUND` at startup.
+
+Produce a self-contained deploy tree with:
+
+```bash
+pnpm -w deploy:api <target-dir>
+```
+
+The `-w` flag runs the script from the workspace root, so this command works from any directory inside the repo (including `apps/api/`). The script is defined only in the root `package.json`; running `pnpm deploy:api` from `apps/api/` without `-w` will fail with "script not found."
+
+`pnpm -w deploy:api` wraps the required steps: it builds `@codersmu/core` and `@codersmu/api` into their respective `dist/` directories, then runs `pnpm deploy --filter @codersmu/api --prod --legacy <target-dir>` to copy everything needed into `<target-dir>`. Both `apps/api/dist/` and `packages/core/dist/` are gitignored, so **running `pnpm deploy` without a fresh build will ship stale or empty `dist/` content.** Always use `pnpm -w deploy:api` (or run the builds explicitly first) — never `pnpm deploy --filter @codersmu/api` on its own.
+
+The resulting `<target-dir>` contains `dist/server.mjs`, a flat `package.json`, and a fully resolved `node_modules/` (including `@codersmu/core` with its own `dist/` + `package.json`). Run the server as:
+
+```bash
+node dist/server.mjs
+```
+
+The `--legacy` flag is required because the workspace does not opt into `inject-workspace-packages`. If you later set `inject-workspace-packages=true` in `.npmrc`, drop `--legacy`.
+
+The package version is inlined into `dist/server.mjs` at build time, so the top-level `apps/api/package.json` is not required for the version to appear in `/health`.
+
 If the health check passes but the UI still shows stale state in Coolify, trust the public health check over a stale page badge.
 
 ## Rollback

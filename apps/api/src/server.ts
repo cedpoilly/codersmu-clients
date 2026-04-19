@@ -1,13 +1,15 @@
+import { realpathSync } from 'node:fs'
 import { createServer } from 'node:http'
-import { createRequire } from 'node:module'
+import { fileURLToPath } from 'node:url'
 
 import { logEvent } from './logger'
 import { handleMeetupBySlugRequest } from './routes/meetup-by-slug'
 import { handleMeetupListRequest } from './routes/meetups'
 import { handleNextMeetupRequest } from './routes/next-meetup'
 
-const require = createRequire(import.meta.url)
-const { version: API_VERSION } = require('../package.json') as { version: string }
+declare const __API_VERSION__: string
+
+const API_VERSION = __API_VERSION__
 const SERVICE_NAME = 'codersmu-api'
 
 function normalizePathname(pathname: string): string {
@@ -163,6 +165,24 @@ async function startServer() {
   })
 }
 
-if (process.argv[1] && import.meta.url === new URL(process.argv[1], 'file://').href) {
+function canonicalize(path: string): string {
+  try {
+    return realpathSync(path)
+  }
+  catch {
+    return path
+  }
+}
+
+function isMainEntry(): boolean {
+  const entryArg = process.argv[1]
+  if (!entryArg) {
+    return false
+  }
+
+  return canonicalize(entryArg) === canonicalize(fileURLToPath(import.meta.url))
+}
+
+if (isMainEntry()) {
   void startServer()
 }

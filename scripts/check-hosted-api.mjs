@@ -22,6 +22,8 @@ function readTimeoutMilliseconds() {
   return parsedValue * 1000
 }
 
+// Keep in sync with getMeetupSlug in packages/core/src/meetup-derived.ts.
+// Duplicated here to keep the hourly uptime probe free of workspace deps.
 function slugify(value) {
   return value
     .normalize('NFKD')
