@@ -4,28 +4,46 @@ import { join } from 'node:path'
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import type { MeetupCache } from '@codersmu/core'
+import type { Meetup, MeetupCache } from '@codersmu/core'
+
+function makeMeetup(overrides: Partial<Meetup> & Pick<Meetup, 'id' | 'title' | 'date' | 'status'>): Meetup {
+  return {
+    id: overrides.id,
+    title: overrides.title,
+    description: overrides.description ?? 'A sample meetup used in API tests.',
+    date: overrides.date,
+    startTime: overrides.startTime ?? '10:00',
+    endTime: overrides.endTime ?? '14:00',
+    venue: overrides.venue ?? 'Test Venue',
+    location: overrides.location ?? 'Moka',
+    status: overrides.status,
+    album: overrides.album ?? null,
+    updatedAt: overrides.updatedAt ?? null,
+    coverImageUrl: overrides.coverImageUrl ?? null,
+    photos: overrides.photos ?? [],
+    sessions: overrides.sessions ?? [],
+    sponsors: overrides.sponsors ?? [],
+    attendeeCount: overrides.attendeeCount,
+    seatsAvailable: overrides.seatsAvailable ?? null,
+    acceptingRsvp: overrides.acceptingRsvp,
+    rsvpClosingDate: overrides.rsvpClosingDate ?? null,
+    rsvpLink: overrides.rsvpLink ?? null,
+    mapUrl: overrides.mapUrl ?? null,
+    parkingLocation: overrides.parkingLocation ?? null,
+  }
+}
 
 const sampleCache: MeetupCache = {
   source: 'https://coders.mu/meetups/',
   scrapedAt: '2099-04-18T06:00:00.000Z',
   meetups: [
-    {
+    makeMeetup({
       id: 'future-meetup',
       title: 'Future Meetup',
-      description: 'A sample meetup used in API tests.',
       date: '2099-04-18',
-      startTime: '10:00',
-      endTime: '14:00',
-      venue: 'Test Venue',
-      location: 'Moka',
       status: 'published',
-      photos: [],
-      sessions: [],
-      sponsors: [],
       acceptingRsvp: 0,
-      seatsAvailable: null,
-    },
+    }),
   ],
 }
 
@@ -139,6 +157,112 @@ describe('handleRequest', () => {
     expect(response.status).toBe(200)
     expect(payload).toEqual({
       meetup: sampleCache.meetups[0],
+    })
+  })
+
+  it('returns null from /meetups/next when no meetup is upcoming', async () => {
+    fetchFrontendMuMeetupsMock.mockReset()
+    fetchFrontendMuMeetupsMock.mockResolvedValue({
+      ...sampleCache,
+      meetups: [
+        makeMeetup({
+          id: 'completed-meetup',
+          title: 'Completed Meetup',
+          date: '2000-01-10',
+          status: 'published',
+        }),
+        makeMeetup({
+          id: 'cancelled-meetup',
+          title: 'Cancelled Meetup',
+          date: '2099-04-19',
+          status: 'canceled',
+        }),
+      ],
+    })
+
+    const { handleRequest } = await import('../src/server')
+
+    const response = await handleRequest(new Request('http://localhost/meetups/next'))
+    const payload = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(payload).toEqual({
+      meetup: null,
+    })
+  })
+
+  it('returns the earliest upcoming meetup with the raw fields clients depend on', async () => {
+    const earliestUpcomingMeetup = makeMeetup({
+      id: 'earliest-upcoming-meetup',
+      title: 'Earliest Upcoming Meetup',
+      description: 'The meetup that macOS should hydrate from /meetups/next.',
+      date: '2099-04-20',
+      startTime: '08:30',
+      endTime: '12:45',
+      venue: 'Core Building',
+      location: 'Ebene',
+      status: 'published',
+      attendeeCount: 42,
+      seatsAvailable: 12,
+      acceptingRsvp: 1,
+      rsvpClosingDate: '2099-04-19T20:00:00.000Z',
+      rsvpLink: 'https://lu.ma/earliest-upcoming-meetup',
+      mapUrl: 'https://maps.example.com/earliest-upcoming-meetup',
+      parkingLocation: 'https://parking.example.com/earliest-upcoming-meetup',
+    })
+
+    fetchFrontendMuMeetupsMock.mockReset()
+    fetchFrontendMuMeetupsMock.mockResolvedValue({
+      ...sampleCache,
+      meetups: [
+        makeMeetup({
+          id: 'later-upcoming-meetup',
+          title: 'Later Upcoming Meetup',
+          date: '2099-04-22',
+          startTime: '18:00',
+          endTime: '22:00',
+          status: 'published',
+        }),
+        makeMeetup({
+          id: 'cancelled-upcoming-meetup',
+          title: 'Cancelled Upcoming Meetup',
+          date: '2099-04-19',
+          status: 'canceled',
+        }),
+        earliestUpcomingMeetup,
+        makeMeetup({
+          id: 'past-meetup',
+          title: 'Past Meetup',
+          date: '2000-01-01',
+          status: 'published',
+        }),
+      ],
+    })
+
+    const { handleRequest } = await import('../src/server')
+
+    const response = await handleRequest(new Request('http://localhost/meetups/next'))
+    const payload = await response.json() as { meetup: Meetup | null }
+
+    expect(response.status).toBe(200)
+    expect(Object.keys(payload)).toEqual(['meetup'])
+    expect(payload.meetup).toEqual(earliestUpcomingMeetup)
+    expect(payload.meetup).toMatchObject({
+      id: 'earliest-upcoming-meetup',
+      title: 'Earliest Upcoming Meetup',
+      date: '2099-04-20',
+      startTime: '08:30',
+      endTime: '12:45',
+      venue: 'Core Building',
+      location: 'Ebene',
+      status: 'published',
+      attendeeCount: 42,
+      seatsAvailable: 12,
+      acceptingRsvp: 1,
+      rsvpClosingDate: '2099-04-19T20:00:00.000Z',
+      rsvpLink: 'https://lu.ma/earliest-upcoming-meetup',
+      mapUrl: 'https://maps.example.com/earliest-upcoming-meetup',
+      parkingLocation: 'https://parking.example.com/earliest-upcoming-meetup',
     })
   })
 
