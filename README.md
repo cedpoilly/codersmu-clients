@@ -29,12 +29,6 @@ pnpm install
 pnpm build:all
 ```
 
-If you want a one-shot bootstrap from a fresh clone:
-
-```bash
-pnpm bootstrap
-```
-
 Try the CLI from the repo root:
 
 ```bash
