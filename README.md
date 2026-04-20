@@ -26,15 +26,14 @@ Clone the repo and install dependencies:
 
 ```bash
 pnpm install
-pnpm build:all
 ```
 
-Try the CLI from the repo root:
+Then choose the client you want to work on:
 
 ```bash
-node dist/cli.mjs next
-node dist/cli.mjs list
-node dist/cli.mjs view next
+pnpm install:cli
+pnpm build:macos
+pnpm run:macos
 ```
 
 Run the main repo checks:
@@ -74,6 +73,8 @@ pnpm run:macos
 ```
 
 `pnpm build:macos` generates the Xcode project if needed and produces a local Debug app bundle at `apps/macos/.derived-data/Build/Products/Debug/CodersmuMenuBar.app`.
+
+`pnpm run:macos` launches that already-built app bundle. It does not rebuild automatically, so rerun `pnpm build:macos` after source changes.
 
 If you want to inspect or edit the project in Xcode directly:
 

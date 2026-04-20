@@ -16,6 +16,8 @@ Current scope:
 pnpm install:macos
 ```
 
+You usually do not need to run this directly, because `pnpm build:macos` will generate the project first when needed.
+
 ## Build the compiled Debug app
 
 ```bash
@@ -33,6 +35,8 @@ apps/macos/.derived-data/Build/Products/Debug/CodersmuMenuBar.app
 ```bash
 pnpm run:macos
 ```
+
+This launches the last built Debug app bundle. It does not rebuild automatically.
 
 ## Open it in Xcode
 
