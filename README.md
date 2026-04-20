@@ -32,7 +32,7 @@ pnpm build:all
 If you want a one-shot bootstrap from a fresh clone:
 
 ```bash
-pnpm dev:bootstrap
+pnpm bootstrap
 ```
 
 Try the CLI from the repo root:
@@ -63,7 +63,7 @@ The intended developer flow is:
 Build the workspace and link the CLI into your local shell:
 
 ```bash
-pnpm dev:install:cli
+pnpm install:cli
 codersmu next
 cmu next
 ```
@@ -75,16 +75,16 @@ This builds the shared core plus the CLI and then uses `npm link`, so the linked
 You need Xcode and `xcodegen` installed first. Then build the compiled Debug app from the repo root:
 
 ```bash
-pnpm dev:build:macos
-pnpm dev:run:macos
+pnpm build:macos
+pnpm run:macos
 ```
 
-`pnpm dev:build:macos` generates the Xcode project if needed and produces a local Debug app bundle at `apps/macos/.derived-data/Build/Products/Debug/CodersmuMenuBar.app`.
+`pnpm build:macos` generates the Xcode project if needed and produces a local Debug app bundle at `apps/macos/.derived-data/Build/Products/Debug/CodersmuMenuBar.app`.
 
 If you want to inspect or edit the project in Xcode directly:
 
 ```bash
-pnpm dev:open:macos
+pnpm open:macos
 ```
 
 If `xcodegen` is missing, install it first:
@@ -163,8 +163,8 @@ The macOS app lives in [`apps/macos`](./apps/macos/README.md).
 To work on it locally:
 
 ```bash
-pnpm dev:build:macos
-pnpm dev:run:macos
+pnpm build:macos
+pnpm run:macos
 ```
 
 ### Raycast
