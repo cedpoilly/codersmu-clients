@@ -26,15 +26,14 @@ Clone the repo and install dependencies:
 
 ```bash
 pnpm install
-pnpm build:all
 ```
 
-Try the CLI from the repo root:
+Then choose the client you want to work on:
 
 ```bash
-node dist/cli.mjs next
-node dist/cli.mjs list
-node dist/cli.mjs view next
+pnpm install:cli
+pnpm build:macos
+pnpm run:macos
 ```
 
 Run the main repo checks:
@@ -42,6 +41,51 @@ Run the main repo checks:
 ```bash
 pnpm check
 npm run check:hosted-api
+```
+
+## Developer Installs
+
+The intended developer flow is:
+
+1. clone the repository
+2. run `pnpm install`
+3. run one target-specific install command from the repo root
+
+### CLI
+
+Build the workspace and link the CLI into your local shell:
+
+```bash
+pnpm install:cli
+codersmu next
+cmu next
+```
+
+This builds the shared core plus the CLI and then uses `npm link`, so the linked command is backed by your locally compiled checkout rather than a watch-mode process.
+
+### macOS Menu Bar App
+
+You need Xcode and `xcodegen` installed first. Then build the compiled Debug app from the repo root:
+
+```bash
+pnpm build:macos
+pnpm run:macos
+```
+
+`pnpm build:macos` generates the Xcode project if needed and produces a local Debug app bundle at `apps/macos/.derived-data/Build/Products/Debug/CodersmuMenuBar.app`.
+
+`pnpm run:macos` launches that already-built app bundle. It does not rebuild automatically, so rerun `pnpm build:macos` after source changes.
+
+If you want to inspect or edit the project in Xcode directly:
+
+```bash
+pnpm dev:open:macos
+```
+
+If `xcodegen` is missing, install it first:
+
+```bash
+brew install xcodegen
 ```
 
 ## Current Clients
@@ -114,9 +158,8 @@ The macOS app lives in [`apps/macos`](./apps/macos/README.md).
 To work on it locally:
 
 ```bash
-cd apps/macos
-xcodegen generate
-open CodersmuMenuBar.xcodeproj
+pnpm build:macos
+pnpm run:macos
 ```
 
 ### Raycast

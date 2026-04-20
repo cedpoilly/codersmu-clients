@@ -13,15 +13,38 @@ Current scope:
 ## Generate the project
 
 ```bash
-cd apps/macos
-xcodegen generate
+pnpm install:macos
 ```
+
+You usually do not need to run this directly, because `pnpm build:macos` will generate the project first when needed.
+
+## Build the compiled Debug app
+
+```bash
+pnpm build:macos
+```
+
+The built app bundle is written to:
+
+```text
+apps/macos/.derived-data/Build/Products/Debug/CodersmuMenuBar.app
+```
+
+## Run the compiled app
+
+```bash
+pnpm run:macos
+```
+
+This launches the last built Debug app bundle. It does not rebuild automatically.
 
 ## Open it in Xcode
 
 ```bash
-open CodersmuMenuBar.xcodeproj
+pnpm dev:open:macos
 ```
+
+These root-level shortcuts assume you are running from the repository root. If you prefer manual commands inside `apps/macos`, `xcodegen generate` and `xcodebuild` still work the same way.
 
 ## Run tests
 
