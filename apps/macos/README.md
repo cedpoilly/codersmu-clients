@@ -41,7 +41,7 @@ This launches the last built Debug app bundle. It does not rebuild automatically
 ## Open it in Xcode
 
 ```bash
-pnpm open:macos
+pnpm dev:open:macos
 ```
 
 These root-level shortcuts assume you are running from the repository root. If you prefer manual commands inside `apps/macos`, `xcodegen generate` and `xcodebuild` still work the same way.

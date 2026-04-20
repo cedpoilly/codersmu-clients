@@ -79,7 +79,7 @@ pnpm run:macos
 If you want to inspect or edit the project in Xcode directly:
 
 ```bash
-pnpm open:macos
+pnpm dev:open:macos
 ```
 
 If `xcodegen` is missing, install it first:
