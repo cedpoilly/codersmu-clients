@@ -1,0 +1,103 @@
+name: Hosted API Deploy
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_branch || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    if: >-
+      ${{
+        github.event_name == 'workflow_dispatch' ||
+        (
+          github.event_name == 'workflow_run' &&
+          github.event.workflow_run.conclusion == 'success' &&
+          github.event.workflow_run.event == 'push' &&
+          github.event.workflow_run.head_branch == 'main'
+        )
+      }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      EXPECTED_SHA: ${{ github.event_name == 'workflow_dispatch' && github.sha || github.event.workflow_run.head_sha }}
+      COOLIFY_DEPLOY_WEBHOOK_URL: ${{ secrets.COOLIFY_DEPLOY_WEBHOOK_URL }}
+    steps:
+      - name: Ignore stale successful CI completions on main
+        id: freshness
+        if: ${{ github.event_name == 'workflow_run' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+
+          current_main_sha="$(gh api repos/${GITHUB_REPOSITORY}/commits/main --jq .sha)"
+          echo "current_main_sha=${current_main_sha}" >> "${GITHUB_OUTPUT}"
+
+          if [[ "${current_main_sha}" != "${EXPECTED_SHA}" ]]; then
+            echo "should_deploy=false" >> "${GITHUB_OUTPUT}"
+            echo "Skipping deploy for stale CI completion ${EXPECTED_SHA}; main now points to ${current_main_sha}."
+            exit 0
+          fi
+
+          echo "should_deploy=true" >> "${GITHUB_OUTPUT}"
+
+      - name: Require Coolify deploy webhook secret
+        if: ${{ github.event_name == 'workflow_dispatch' || steps.freshness.outputs.should_deploy == 'true' }}
+        run: |
+          set -euo pipefail
+
+          if [[ -z "${COOLIFY_DEPLOY_WEBHOOK_URL}" ]]; then
+            echo "COOLIFY_DEPLOY_WEBHOOK_URL is not configured." >&2
+            echo "Add the Coolify deploy webhook as a repository secret to enable auto-deploy." >&2
+            exit 1
+          fi
+
+      - name: Trigger Coolify deployment
+        if: ${{ github.event_name == 'workflow_dispatch' || steps.freshness.outputs.should_deploy == 'true' }}
+        run: |
+          set -euo pipefail
+          curl -fsSL -X POST "${COOLIFY_DEPLOY_WEBHOOK_URL}"
+
+      - name: Wait for production to serve the expected release SHA
+        if: ${{ github.event_name == 'workflow_dispatch' || steps.freshness.outputs.should_deploy == 'true' }}
+        run: |
+          set -euo pipefail
+
+          if [[ -z "${EXPECTED_SHA}" ]]; then
+            echo "Expected SHA is missing." >&2
+            exit 1
+          fi
+
+          for attempt in $(seq 1 40); do
+            payload="$(curl -fsSL https://codersmu.cedpoilly.dev/health || true)"
+
+            if [[ -n "${payload}" ]]; then
+              live_sha="$(printf '%s' "${payload}" | python -c 'import json, sys; print(json.load(sys.stdin).get("releaseSha", ""))')"
+
+              if [[ -z "${live_sha}" ]]; then
+                echo "Production health payload is missing releaseSha. CODERSMU_RELEASE_SHA must be configured in the runtime environment." >&2
+                printf '%s\n' "${payload}" >&2
+                exit 1
+              fi
+
+              if [[ "${live_sha}" == "${EXPECTED_SHA}" ]]; then
+                echo "Production is now serving ${EXPECTED_SHA}."
+                exit 0
+              fi
+            fi
+
+            sleep 15
+          done
+
+          echo "Production did not report release SHA ${EXPECTED_SHA} within the timeout." >&2
+          curl -fsSL https://codersmu.cedpoilly.dev/health || true
+          exit 1
