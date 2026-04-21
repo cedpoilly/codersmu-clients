@@ -47,6 +47,9 @@ export interface Meetup {
   sponsors: MeetupSponsor[]
   attendeeCount?: number
   seatsAvailable?: number | null
+  capacityTotal?: number | null
+  rsvpCount?: number | null
+  seatsRemaining?: number | null
   acceptingRsvp?: number | null
   rsvpClosingDate?: string | null
   rsvpLink?: string | null

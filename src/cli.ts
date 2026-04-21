@@ -222,7 +222,13 @@ function renderMeetupDetail(meetup: Meetup): void {
     `${colorize('yellow', 'Where')} ${joinParts([location.name, location.address, location.city]) || 'TBA'}`,
   ]
 
-  if (typeof meetup.seatsAvailable === 'number') {
+  if (typeof meetup.seatsRemaining === 'number') {
+    infoLines.push(`${colorize('yellow', 'Seats')} ${meetup.seatsRemaining} remaining`)
+  }
+  else if (typeof meetup.capacityTotal === 'number') {
+    infoLines.push(`${colorize('yellow', 'Capacity')} ${meetup.capacityTotal} total`)
+  }
+  else if (typeof meetup.seatsAvailable === 'number') {
     infoLines.push(`${colorize('yellow', 'Seats')} ${meetup.seatsAvailable} available`)
   }
   else if (typeof meetup.attendeeCount === 'number' && meetup.attendeeCount > 0) {

@@ -2,6 +2,7 @@ import type { Meetup, MeetupCache } from '../types'
 
 const DEFAULT_API_BASE_URL = 'https://coders.mu/api/public/v1'
 const FETCH_TIMEOUT_MS = 10_000
+const DATA_PAGE_PATTERN = /data-page="([^"]+)"/
 
 export interface FetchFrontendMuMeetupsOptions {
   apiBaseUrl?: string
@@ -54,19 +55,42 @@ interface RawMeetup {
   sessions?: RawSession[]
   sponsors?: RawSponsor[]
   seatsAvailable?: number | null
+  rsvpCount?: number | null
   rsvpClosingDate?: string | null
   rsvpLink?: string | null
   mapUrl?: string | null
   parkingLocation?: string | null
 }
 
-async function fetchJson<T>(url: string): Promise<T> {
-  let response: Response
+interface RawMeetupPagePayload {
+  props?: {
+    rsvpCount?: number | null
+  }
+}
 
+async function fetchJson<T>(url: string): Promise<T> {
+  const response = await fetchResponse(url, 'application/json')
+  if (!response.ok) {
+    throw new Error(`Request failed for ${url}: ${response.status} ${response.statusText}`)
+  }
+
+  return response.json() as Promise<T>
+}
+
+async function fetchText(url: string, accept: string): Promise<string> {
+  const response = await fetchResponse(url, accept)
+  if (!response.ok) {
+    throw new Error(`Request failed for ${url}: ${response.status} ${response.statusText}`)
+  }
+
+  return response.text()
+}
+
+async function fetchResponse(url: string, accept: string): Promise<Response> {
   try {
-    response = await fetch(url, {
+    return await fetch(url, {
       headers: {
-        accept: 'application/json',
+        accept,
         'user-agent': 'codersmu-clients/0.0.0-prototype.1 (+https://coders.mu)',
       },
       signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
@@ -79,12 +103,6 @@ async function fetchJson<T>(url: string): Promise<T> {
 
     throw error
   }
-
-  if (!response.ok) {
-    throw new Error(`Request failed for ${url}: ${response.status} ${response.statusText}`)
-  }
-
-  return response.json() as Promise<T>
 }
 
 function normalizeApiBaseUrl(apiBaseUrl: string): string {
@@ -101,6 +119,71 @@ async function fetchMeetupIndex(meetupsApiUrl: string): Promise<RawMeetup[]> {
 
 async function fetchMeetupDetail(meetupsApiUrl: string, id: string): Promise<RawMeetup> {
   return fetchJson<RawMeetup>(`${meetupsApiUrl}/${encodeURIComponent(id)}`)
+}
+
+function buildMeetupPageUrl(apiBaseUrl: string, id: string): string {
+  const siteBaseUrl = new URL(apiBaseUrl).origin
+  return `${siteBaseUrl}/meetup/${encodeURIComponent(id)}`
+}
+
+function decodeHtmlEntities(value: string): string {
+  return value.replaceAll(/&(#(\d+)|#x([0-9a-fA-F]+)|[a-zA-Z]+);/g, (entity, _whole, decimal, hex) => {
+    if (decimal) {
+      return String.fromCodePoint(Number(decimal))
+    }
+
+    if (hex) {
+      return String.fromCodePoint(Number.parseInt(hex, 16))
+    }
+
+    switch (entity) {
+      case '&quot;':
+        return '"'
+      case '&amp;':
+        return '&'
+      case '&lt;':
+        return '<'
+      case '&gt;':
+        return '>'
+      case '&apos;':
+      case '&#039;':
+        return '\''
+      case '&nbsp;':
+        return ' '
+      default:
+        return entity
+    }
+  })
+}
+
+function extractDataPageJson(html: string): string {
+  const match = html.match(DATA_PAGE_PATTERN)
+  if (!match?.[1]) {
+    throw new Error('Meetup page did not include a data-page payload.')
+  }
+
+  return decodeHtmlEntities(match[1])
+}
+
+async function fetchMeetupPageRsvpCount(apiBaseUrl: string, id: string): Promise<number | null> {
+  const html = await fetchText(buildMeetupPageUrl(apiBaseUrl, id), 'text/html,application/xhtml+xml')
+  const payload = JSON.parse(extractDataPageJson(html)) as RawMeetupPagePayload
+  return payload.props?.rsvpCount ?? null
+}
+
+function normalizeSeatMetrics(rawMeetup: RawMeetup): Pick<Meetup, 'seatsAvailable' | 'capacityTotal' | 'rsvpCount' | 'seatsRemaining'> {
+  const capacityTotal = rawMeetup.seatsAvailable ?? null
+  const rsvpCount = rawMeetup.rsvpCount ?? null
+  const seatsRemaining = typeof capacityTotal === 'number' && typeof rsvpCount === 'number'
+    ? Math.max(capacityTotal - rsvpCount, 0)
+    : null
+
+  return {
+    seatsAvailable: capacityTotal,
+    capacityTotal,
+    rsvpCount,
+    seatsRemaining,
+  }
 }
 
 async function mapConcurrent<Input, Output>(
@@ -126,6 +209,7 @@ function normalizeMeetup(rawMeetup: RawMeetup): Meetup {
   const normalizedStatus = rawMeetup.status?.trim().toLowerCase() === 'cancelled'
     ? 'canceled'
     : rawMeetup.status
+  const seatMetrics = normalizeSeatMetrics(rawMeetup)
 
   return {
     id: rawMeetup.id,
@@ -166,7 +250,7 @@ function normalizeMeetup(rawMeetup: RawMeetup): Meetup {
       logoBg: sponsor.logoBg ?? null,
       status: sponsor.status ?? null,
     })),
-    seatsAvailable: rawMeetup.seatsAvailable ?? null,
+    ...seatMetrics,
     rsvpClosingDate: rawMeetup.rsvpClosingDate ?? null,
     rsvpLink: rawMeetup.rsvpLink ?? null,
     mapUrl: rawMeetup.mapUrl ?? null,
@@ -180,7 +264,21 @@ export async function fetchFrontendMuMeetups(options?: FetchFrontendMuMeetupsOpt
   const meetups = await fetchMeetupIndex(meetupsApiUrl)
   const details = await mapConcurrent(meetups, 4, async (meetup) => {
     try {
-      return await fetchMeetupDetail(meetupsApiUrl, meetup.id)
+      const detail = await fetchMeetupDetail(meetupsApiUrl, meetup.id)
+
+      if (typeof detail.seatsAvailable === 'number' && detail.rsvpCount == null) {
+        try {
+          return {
+            ...detail,
+            rsvpCount: await fetchMeetupPageRsvpCount(apiBaseUrl, meetup.id),
+          }
+        }
+        catch {
+          return detail
+        }
+      }
+
+      return detail
     }
     catch (error) {
       options?.onDetailFailure?.(meetup.id, error)

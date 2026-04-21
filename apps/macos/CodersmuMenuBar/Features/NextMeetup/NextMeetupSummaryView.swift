@@ -31,7 +31,7 @@ struct NextMeetupSummaryView: View {
         }
 
         if let seatsRemaining = snapshot.seatsRemaining {
-          Label("\(seatsRemaining) seats currently available", systemImage: "person.3")
+          Label("\(seatsRemaining) seats remaining", systemImage: "person.3")
             .font(.caption)
             .foregroundStyle(.secondary)
         }
