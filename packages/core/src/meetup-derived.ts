@@ -149,6 +149,11 @@ function buildEndUtcIso(date: string, startTime: string, endTime?: string | null
 }
 
 export function getMeetupSlug(meetup: Meetup): string {
+  const canonicalSlug = meetup.slug?.trim()
+  if (canonicalSlug) {
+    return canonicalSlug
+  }
+
   const datePrefix = meetup.date?.slice(0, 10)
   if (datePrefix) {
     return `${datePrefix}-${slugify(stripHtml(meetup.title))}`

@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { getMeetupEndsAt, getMeetupLifecycleStatus, getMeetupLinks, getMeetupStartsAt } from '../src/meetup-derived'
+import { getMeetupEndsAt, getMeetupLifecycleStatus, getMeetupLinks, getMeetupSlug, getMeetupStartsAt } from '../src/meetup-derived'
 import type { Meetup } from '../src/types'
 
 const baseMeetup: Meetup = {
@@ -101,5 +101,14 @@ describe('meetup-derived schedule helpers', () => {
       map: undefined,
       parking: undefined,
     })
+  })
+
+  it('prefers the canonical API slug when one is provided', () => {
+    const canonicalSlugMeetup: Meetup = {
+      ...baseMeetup,
+      slug: '2026-may',
+    }
+
+    expect(getMeetupSlug(canonicalSlugMeetup)).toBe('2026-may')
   })
 })

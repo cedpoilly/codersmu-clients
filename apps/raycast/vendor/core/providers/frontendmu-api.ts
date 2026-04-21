@@ -36,6 +36,7 @@ interface RawSponsor {
 
 interface RawMeetup {
   id: string
+  slug?: string | null
   title: string
   description?: string | null
   date: string | null
@@ -128,6 +129,7 @@ function normalizeMeetup(rawMeetup: RawMeetup): Meetup {
 
   return {
     id: rawMeetup.id,
+    slug: rawMeetup.slug ?? null,
     title: rawMeetup.title,
     description: rawMeetup.description ?? null,
     date: rawMeetup.date,
