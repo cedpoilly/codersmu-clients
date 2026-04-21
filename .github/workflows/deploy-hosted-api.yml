@@ -30,6 +30,7 @@ jobs:
     env:
       EXPECTED_SHA: ${{ github.event_name == 'workflow_dispatch' && github.sha || github.event.workflow_run.head_sha }}
       COOLIFY_DEPLOY_WEBHOOK_URL: ${{ secrets.COOLIFY_DEPLOY_WEBHOOK_URL }}
+      COOLIFY_DEPLOY_TOKEN: ${{ secrets.COOLIFY_DEPLOY_TOKEN }}
     steps:
       - name: Ignore stale successful CI completions on main
         id: freshness
@@ -50,7 +51,7 @@ jobs:
 
           echo "should_deploy=true" >> "${GITHUB_OUTPUT}"
 
-      - name: Require Coolify deploy webhook secret
+      - name: Require Coolify deploy configuration
         if: ${{ github.event_name == 'workflow_dispatch' || steps.freshness.outputs.should_deploy == 'true' }}
         run: |
           set -euo pipefail
@@ -61,11 +62,20 @@ jobs:
             exit 1
           fi
 
+          if [[ -z "${COOLIFY_DEPLOY_TOKEN}" ]]; then
+            echo "COOLIFY_DEPLOY_TOKEN is not configured." >&2
+            echo "Add a Coolify API token with Deploy permission as a repository secret to enable auto-deploy." >&2
+            exit 1
+          fi
+
       - name: Trigger Coolify deployment
         if: ${{ github.event_name == 'workflow_dispatch' || steps.freshness.outputs.should_deploy == 'true' }}
         run: |
           set -euo pipefail
-          curl -fsSL -X POST "${COOLIFY_DEPLOY_WEBHOOK_URL}"
+          curl -fsSL \
+            --request GET \
+            --header "Authorization: Bearer ${COOLIFY_DEPLOY_TOKEN}" \
+            "${COOLIFY_DEPLOY_WEBHOOK_URL}"
 
       - name: Wait for production to serve the expected release SHA
         if: ${{ github.event_name == 'workflow_dispatch' || steps.freshness.outputs.should_deploy == 'true' }}
