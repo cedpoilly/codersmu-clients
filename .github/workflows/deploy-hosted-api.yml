@@ -104,11 +104,11 @@ PY
           )"
 
           env_exists="$(
-            printf '%s' "${env_list}" | python - <<'PY'
+            ENV_LIST="${env_list}" python - <<'PY'
 import json
-import sys
+import os
 
-envs = json.load(sys.stdin)
+envs = json.loads(os.environ["ENV_LIST"])
 print("true" if any(item.get("key") == "CODERSMU_RELEASE_SHA" for item in envs) else "false")
 PY
           )"
