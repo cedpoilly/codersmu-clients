@@ -30,6 +30,7 @@ export interface MeetupPhoto {
 
 export interface Meetup {
   id: string
+  slug?: string | null
   title: string
   description?: string | null
   date: string | null

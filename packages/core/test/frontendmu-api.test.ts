@@ -13,6 +13,7 @@ describe('fetchFrontendMuMeetups', () => {
       .mockResolvedValueOnce(new Response(JSON.stringify([
         {
           id: 'future-meetup',
+          slug: 'canonical-future-meetup',
           title: 'The Test Meetup',
           date: '2099-04-18',
           status: 'published',
@@ -22,6 +23,7 @@ describe('fetchFrontendMuMeetups', () => {
       ]), { status: 200 }))
       .mockResolvedValueOnce(new Response(JSON.stringify({
         id: 'future-meetup',
+        slug: 'canonical-future-meetup',
         title: 'The Test Meetup',
         description: '<p>Hello <strong>coders.mu</strong></p>',
         date: '2099-04-18',
@@ -50,6 +52,7 @@ describe('fetchFrontendMuMeetups', () => {
     expect(cache.meetups).toHaveLength(1)
     expect(cache.meetups[0]).toMatchObject({
       id: 'future-meetup',
+      slug: 'canonical-future-meetup',
       title: 'The Test Meetup',
       description: '<p>Hello <strong>coders.mu</strong></p>',
       date: '2099-04-18',
@@ -67,7 +70,7 @@ describe('fetchFrontendMuMeetups', () => {
     })
   })
 
-  it('accepts the live API shape without a slug field', async () => {
+  it('falls back cleanly when the live API omits slug', async () => {
     const fetchMock = vi.fn()
       .mockResolvedValueOnce(new Response(JSON.stringify([
         {
@@ -92,6 +95,7 @@ describe('fetchFrontendMuMeetups', () => {
 
     expect(cache.meetups[0]?.date).toBe('2099-04-18')
     expect(cache.meetups[0]?.id).toBe('future-meetup')
+    expect(cache.meetups[0]?.slug).toBeNull()
   })
 
   it('supports overriding the upstream API base URL', async () => {
