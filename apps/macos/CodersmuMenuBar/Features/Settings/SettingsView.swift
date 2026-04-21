@@ -73,6 +73,18 @@ struct SettingsView: View {
             }
           }
         }
+
+        Text("Status: \(appModel.notificationDebugState.summary)")
+          .font(.caption)
+          .foregroundStyle(.secondary)
+
+        if appModel.notificationDebugState.authorizationState == .notDetermined {
+          Button("Request Notification Permission") {
+            Task {
+              await appModel.requestNotificationPermission()
+            }
+          }
+        }
       }
 
       Section("App") {
@@ -114,6 +126,26 @@ struct SettingsView: View {
 
       if showsDeveloperControls {
         Section("Developer") {
+          Button("Refresh Notification Status") {
+            Task {
+              await appModel.refreshNotificationDebugState()
+            }
+          }
+          .disabled(appModel.isRefreshing)
+
+          Button("Send Test Notification") {
+            Task {
+              await appModel.sendTestNotification()
+            }
+          }
+          .disabled(appModel.isRefreshing)
+
+          if let notificationDebugMessage = appModel.notificationDebugMessage {
+            Text(notificationDebugMessage)
+              .font(.caption)
+              .foregroundStyle(.secondary)
+          }
+
           Button(appModel.isRefreshing ? "Refreshing…" : "Trigger Scheduled Refresh") {
             Task {
               await appModel.refresh(trigger: .scheduled)

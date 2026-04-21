@@ -36,6 +36,8 @@ final class AppModel {
   var refreshState: RefreshState = .idle
   var preferences: AppPreferences
   var launchAtLoginErrorMessage: String?
+  var notificationDebugState: NotificationDebugState = .unavailable
+  var notificationDebugMessage: String?
 
   @ObservationIgnored private let coordinator: RefreshCoordinator
   @ObservationIgnored private let scheduler: RefreshScheduler
@@ -110,6 +112,7 @@ final class AppModel {
     await refresh(trigger: .appLaunch)
     scheduler.start()
     await coordinator.requestNotificationAuthorization()
+    await refreshNotificationDebugState()
   }
 
   func refresh(trigger: RefreshTrigger = .manual) async {
@@ -127,6 +130,10 @@ final class AppModel {
     } else {
       refreshState = .idle
       launchAtLoginErrorMessage = nil
+    }
+
+    if trigger == .manual || trigger == .scheduled {
+      notificationDebugMessage = outcome.debugSummary
     }
   }
 
@@ -182,6 +189,32 @@ final class AppModel {
   func clearSnooze() {
     preferences.snoozedUntil = nil
     persistPreferences()
+  }
+
+  func refreshNotificationDebugState() async {
+    notificationDebugState = await coordinator.notificationServiceDebugState()
+  }
+
+  func requestNotificationPermission() async {
+    await coordinator.requestNotificationAuthorization()
+    await refreshNotificationDebugState()
+
+    switch notificationDebugState.authorizationState {
+    case .authorized, .provisional, .ephemeral:
+      notificationDebugMessage = "Notification permission is enabled."
+    case .denied:
+      notificationDebugMessage = "Notifications were denied by macOS for Coders.mu."
+    case .notDetermined:
+      notificationDebugMessage = "macOS has not granted notification permission yet."
+    case .unsupported:
+      notificationDebugMessage = "Notification permission status is unavailable."
+    }
+  }
+
+  func sendTestNotification() async {
+    let result = await coordinator.sendTestNotification(preferences: preferences)
+    notificationDebugMessage = result.message
+    await refreshNotificationDebugState()
   }
 
   func simulateDeveloperEvent(_ event: DeveloperInjectedEvent) async {

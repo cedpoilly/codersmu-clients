@@ -22,7 +22,7 @@ struct NextMeetupSummaryView: View {
           .font(.subheadline)
           .foregroundStyle(.secondary)
 
-        if let description = snapshot.description?.trimmingCharacters(in: .whitespacesAndNewlines),
+        if let description = snapshot.detailsText?.trimmingCharacters(in: .whitespacesAndNewlines),
            !description.isEmpty {
           Text(description)
             .font(.callout)

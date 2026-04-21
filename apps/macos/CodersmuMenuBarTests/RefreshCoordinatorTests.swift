@@ -19,12 +19,15 @@ final class RefreshCoordinatorTests: XCTestCase {
 
     XCTAssertEqual(outcome.snapshot, snapshot)
     XCTAssertEqual(outcome.errorDescription, "Couldn't refresh Coders.mu right now.")
+    XCTAssertEqual(outcome.debugSummary, "Refresh failed: \(TestError.writeFailed.localizedDescription)")
     XCTAssertFalse(notificationService.notifiedEvents.isEmpty)
   }
 
   func testChangeSimulationsCanCreateSyntheticBaselines() {
     XCTAssertNotNil(DeveloperInjectedEvent.dateChanged.applying(to: nil))
     XCTAssertNotNil(DeveloperInjectedEvent.locationChanged.applying(to: nil))
+    XCTAssertNotNil(DeveloperInjectedEvent.descriptionChanged.applying(to: nil))
+    XCTAssertNotNil(DeveloperInjectedEvent.agendaChanged.applying(to: nil))
     XCTAssertNotNil(DeveloperInjectedEvent.seatThresholdReached.applying(to: nil))
     XCTAssertNotNil(DeveloperInjectedEvent.meetupPostponed.applying(to: nil))
   }
@@ -65,8 +68,34 @@ final class RefreshCoordinatorTests: XCTestCase {
     let outcome = await coordinator.refresh(trigger: .manual, preferences: .default)
 
     XCTAssertTrue(outcome.events.isEmpty)
+    XCTAssertEqual(outcome.debugSummary, "Refresh completed. Change already notified earlier: RSVP is now open for the next meetup.")
     XCTAssertEqual(snapshotStore.savedStates.last?.deliveredFingerprints, [deliveredFingerprint])
     XCTAssertTrue(notificationService.notifiedEvents.isEmpty)
+  }
+
+  func testRefreshReportsWhenNoTrackedChangesAreDetected() async {
+    let snapshot = makeSnapshot(
+      slug: "steady-state",
+      meetupURL: URL(string: "https://coders.mu/meetup/steady-state")!,
+      rsvpURL: nil
+    )
+    let snapshotStore = RecordingSnapshotStore(state: PersistedAppState(
+      snapshot: snapshot,
+      deliveredFingerprints: [],
+      lastRefreshAt: nil
+    ))
+    let notificationService = RecordingNotificationService()
+    let coordinator = RefreshCoordinator(
+      source: StubMeetupSource(snapshot: snapshot),
+      snapshotStore: snapshotStore,
+      changeDetector: ChangeDetector(),
+      notificationService: notificationService
+    )
+
+    let outcome = await coordinator.refresh(trigger: .manual, preferences: .default)
+
+    XCTAssertTrue(outcome.events.isEmpty)
+    XCTAssertEqual(outcome.debugSummary, "Refresh completed. No tracked changes detected.")
   }
 
   func testCliMeetupSnapshotKeepsScheduleNilWhenStartTimeIsMissing() throws {
@@ -205,6 +234,74 @@ final class RefreshCoordinatorTests: XCTestCase {
     XCTAssertNotEqual(firstLocation, secondLocation)
     XCTAssertEqual(firstBatch.first?.kind, .locationChanged)
     XCTAssertEqual(secondBatch.first?.kind, .locationChanged)
+  }
+
+  func testDescriptionSimulationTriggersDescriptionNotification() async {
+    let defaults = UserDefaults(suiteName: "RefreshCoordinatorTests-\(UUID().uuidString)")!
+    let baselineSnapshot = makeSnapshot(
+      slug: "description-baseline",
+      meetupURL: URL(string: "https://coders.mu/meetup/description-baseline")!,
+      rsvpURL: URL(string: "https://coders.mu/meetup/description-baseline")!
+    )
+
+    let snapshotStore = RecordingSnapshotStore(state: PersistedAppState(
+      snapshot: baselineSnapshot,
+      deliveredFingerprints: [],
+      lastRefreshAt: nil
+    ))
+    let notificationService = RecordingNotificationService()
+    let coordinator = RefreshCoordinator(
+      source: StubMeetupSource(snapshot: baselineSnapshot),
+      snapshotStore: snapshotStore,
+      changeDetector: ChangeDetector(),
+      notificationService: notificationService
+    )
+    let model = AppModel(
+      coordinator: coordinator,
+      scheduler: RefreshScheduler(intervalProvider: { .seconds(3600) }),
+      preferencesStore: AppPreferencesStore(userDefaults: defaults),
+      launchAtLoginManager: LaunchAtLoginManager()
+    )
+    model.snapshot = baselineSnapshot
+
+    await model.simulateDeveloperEvent(.descriptionChanged)
+
+    XCTAssertEqual(notificationService.notificationBatches.last?.first?.kind, .descriptionChanged)
+    XCTAssertEqual(model.refreshState, RefreshState.idle)
+  }
+
+  func testAgendaSimulationTriggersAgendaNotification() async {
+    let defaults = UserDefaults(suiteName: "RefreshCoordinatorTests-\(UUID().uuidString)")!
+    let baselineSnapshot = makeSnapshot(
+      slug: "agenda-baseline",
+      meetupURL: URL(string: "https://coders.mu/meetup/agenda-baseline")!,
+      rsvpURL: URL(string: "https://coders.mu/meetup/agenda-baseline")!
+    )
+
+    let snapshotStore = RecordingSnapshotStore(state: PersistedAppState(
+      snapshot: baselineSnapshot,
+      deliveredFingerprints: [],
+      lastRefreshAt: nil
+    ))
+    let notificationService = RecordingNotificationService()
+    let coordinator = RefreshCoordinator(
+      source: StubMeetupSource(snapshot: baselineSnapshot),
+      snapshotStore: snapshotStore,
+      changeDetector: ChangeDetector(),
+      notificationService: notificationService
+    )
+    let model = AppModel(
+      coordinator: coordinator,
+      scheduler: RefreshScheduler(intervalProvider: { .seconds(3600) }),
+      preferencesStore: AppPreferencesStore(userDefaults: defaults),
+      launchAtLoginManager: LaunchAtLoginManager()
+    )
+    model.snapshot = baselineSnapshot
+
+    await model.simulateDeveloperEvent(.agendaChanged)
+
+    XCTAssertEqual(notificationService.notificationBatches.last?.first?.kind, .agendaChanged)
+    XCTAssertEqual(model.refreshState, RefreshState.idle)
   }
 
   func testSeatThresholdSimulationStillFiresFromALowSeatBaseline() async {
@@ -363,6 +460,7 @@ final class RefreshCoordinatorTests: XCTestCase {
       slug: slug,
       title: "Example Meetup",
       description: nil,
+      agendaSummary: nil,
       startsAt: Date(timeIntervalSince1970: 1_800_000_000),
       endsAt: Date(timeIntervalSince1970: 1_800_007_200),
       venueName: venueName,
@@ -425,9 +523,10 @@ private final class RecordingNotificationService: NotificationService {
 
   func requestAuthorization() async {}
 
-  func notify(events: [MeetupChangeEvent], snapshot: MeetupSnapshot, preferences: AppPreferences) async {
+  func notify(events: [MeetupChangeEvent], snapshot: MeetupSnapshot, preferences: AppPreferences) async -> [NotificationDeliveryResult] {
     notifiedEvents = events
     notificationBatches.append(events)
+    return events.map { _ in .scheduled("Scheduled in tests.") }
   }
 }
 

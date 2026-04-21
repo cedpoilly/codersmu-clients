@@ -82,6 +82,32 @@ struct ChangeDetector {
       )
     }
 
+    if previous.descriptionDedupeKey != current.descriptionDedupeKey {
+      events.append(
+        MeetupChangeEvent(
+          kind: .descriptionChanged,
+          seatThreshold: nil,
+          dedupeKey: current.descriptionDedupeKey,
+          summary: "The meetup description was updated.",
+          detectedAt: now,
+          meetupSlug: current.changeIdentity
+        )
+      )
+    }
+
+    if previous.agendaDedupeKey != current.agendaDedupeKey {
+      events.append(
+        MeetupChangeEvent(
+          kind: .agendaChanged,
+          seatThreshold: nil,
+          dedupeKey: current.agendaDedupeKey,
+          summary: "The meetup agenda was updated.",
+          detectedAt: now,
+          meetupSlug: current.changeIdentity
+        )
+      )
+    }
+
     if previous.rsvpURL == nil, current.rsvpURL != nil {
       events.append(
         MeetupChangeEvent(
@@ -146,5 +172,22 @@ private extension MeetupSnapshot {
 
   var locationDedupeKey: String {
     locationDescription?.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() ?? "nil"
+  }
+
+  var descriptionDedupeKey: String {
+    description?.normalizedChangeDedupeKey ?? "nil"
+  }
+
+  var agendaDedupeKey: String {
+    agendaSummary?.normalizedChangeDedupeKey ?? "nil"
+  }
+}
+
+private extension String {
+  var normalizedChangeDedupeKey: String {
+    components(separatedBy: .whitespacesAndNewlines)
+      .filter { !$0.isEmpty }
+      .joined(separator: " ")
+      .lowercased()
   }
 }

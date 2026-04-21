@@ -29,6 +29,26 @@ final class ChangeDetectorTests: XCTestCase {
     XCTAssertEqual(events.first(where: { $0.kind == .seatThresholdReached })?.seatThreshold, 10)
   }
 
+  func testDescriptionChangesAreDetected() {
+    let detector = ChangeDetector()
+    let oldSnapshot = makeSnapshot(description: "Original description")
+    let newSnapshot = makeSnapshot(description: "Updated description")
+
+    let events = detector.detectChanges(from: oldSnapshot, to: newSnapshot)
+
+    XCTAssertTrue(events.contains(where: { $0.kind == .descriptionChanged }))
+  }
+
+  func testAgendaChangesAreDetected() {
+    let detector = ChangeDetector()
+    let oldSnapshot = makeSnapshot(agendaSummary: "Intro | Q&A")
+    let newSnapshot = makeSnapshot(agendaSummary: "Intro | Panel")
+
+    let events = detector.detectChanges(from: oldSnapshot, to: newSnapshot)
+
+    XCTAssertTrue(events.contains(where: { $0.kind == .agendaChanged }))
+  }
+
   func testRepeatedScheduleChangesProduceDistinctFingerprints() {
     let detector = ChangeDetector()
     let original = makeSnapshot()
@@ -93,6 +113,8 @@ final class ChangeDetectorTests: XCTestCase {
     venueName: String? = "Spoon Consulting Offices",
     venueAddress: String? = "Moka",
     seatsRemaining: Int? = 30,
+    description: String? = nil,
+    agendaSummary: String? = nil,
     startsAt: Date = Date(timeIntervalSince1970: 1_800_000_000),
     endsAt: Date = Date(timeIntervalSince1970: 1_800_007_200),
     meetupURL: URL = URL(string: "https://example.com/meetup")!
@@ -100,7 +122,8 @@ final class ChangeDetectorTests: XCTestCase {
     MeetupSnapshot(
       slug: slug,
       title: "Example Meetup",
-      description: nil,
+      description: description,
+      agendaSummary: agendaSummary,
       startsAt: startsAt,
       endsAt: endsAt,
       venueName: venueName,

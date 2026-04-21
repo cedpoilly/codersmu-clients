@@ -3,9 +3,14 @@ import Observation
 import SwiftUI
 
 struct MenuBarRootView: View {
+  private enum FocusTarget: Hashable {
+    case refreshButton
+  }
+
   @Bindable var appModel: AppModel
   @Environment(\.openSettings) private var openSettings
   @State private var isShowingQuitConfirmation = false
+  @FocusState private var focusedTarget: FocusTarget?
 
   var body: some View {
     VStack(alignment: .leading, spacing: 14) {
@@ -71,6 +76,8 @@ struct MenuBarRootView: View {
             await appModel.refresh()
           }
         }
+        .focusable()
+        .focused($focusedTarget, equals: .refreshButton)
         .disabled(appModel.isRefreshing)
 
         if appModel.isRefreshing {
@@ -146,5 +153,13 @@ struct MenuBarRootView: View {
       }
     }
     .padding(16)
+    .onAppear {
+      DispatchQueue.main.async {
+        focusedTarget = .refreshButton
+      }
+    }
+    .onDisappear {
+      focusedTarget = nil
+    }
   }
 }

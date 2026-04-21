@@ -21,6 +21,7 @@ struct MeetupSnapshot: Codable, Equatable, Identifiable {
   var slug: String
   var title: String
   var description: String?
+  var agendaSummary: String?
   var startsAt: Date?
   var endsAt: Date?
   var venueName: String?
@@ -44,6 +45,10 @@ struct MeetupSnapshot: Codable, Equatable, Identifiable {
     return components.isEmpty ? nil : components.joined(separator: ", ")
   }
 
+  var detailsText: String? {
+    description?.trimmedNilIfEmpty ?? agendaSummary?.trimmedNilIfEmpty
+  }
+
   var googleCalendarURL: URL? {
     guard let startsAt else {
       return nil
@@ -54,7 +59,7 @@ struct MeetupSnapshot: Codable, Equatable, Identifiable {
     components?.queryItems = [
       URLQueryItem(name: "action", value: "TEMPLATE"),
       URLQueryItem(name: "text", value: title),
-      URLQueryItem(name: "details", value: description?.trimmedNilIfEmpty),
+      URLQueryItem(name: "details", value: detailsText),
       URLQueryItem(name: "location", value: locationDescription),
       URLQueryItem(name: "dates", value: "\(calendarTimestamp(for: startsAt))/\(calendarTimestamp(for: endDate))")
     ]

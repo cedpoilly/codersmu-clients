@@ -11,6 +11,7 @@ struct RefreshOutcome {
   var events: [MeetupChangeEvent]
   var lastRefreshAt: Date
   var errorDescription: String?
+  var debugSummary: String?
 }
 
 @MainActor
@@ -26,6 +27,14 @@ struct RefreshCoordinator {
 
   func requestNotificationAuthorization() async {
     await notificationService.requestAuthorization()
+  }
+
+  func notificationServiceDebugState() async -> NotificationDebugState {
+    await notificationService.notificationDebugState()
+  }
+
+  func sendTestNotification(preferences: AppPreferences) async -> NotificationDeliveryResult {
+    await notificationService.sendTestNotification(preferences: preferences)
   }
 
   func refresh(trigger: RefreshTrigger, preferences: AppPreferences) async -> RefreshOutcome {
@@ -92,7 +101,13 @@ struct RefreshCoordinator {
         }
       }
 
-      return RefreshOutcome(snapshot: nil, events: [], lastRefreshAt: now, errorDescription: nil)
+      return RefreshOutcome(
+        snapshot: nil,
+        events: [],
+        lastRefreshAt: now,
+        errorDescription: nil,
+        debugSummary: "Refresh completed. No upcoming meetup was returned."
+      )
     }
 
     let existingFingerprints = existingFingerprintsOverride ?? (
@@ -104,7 +119,11 @@ struct RefreshCoordinator {
     let detectedEvents = changeDetector.detectChanges(from: previousSnapshot, to: latestSnapshot)
     let freshEvents = detectedEvents.filter { !existingFingerprints.contains($0.fingerprint) }
 
-    await notificationService.notify(events: freshEvents, snapshot: latestSnapshot, preferences: preferences)
+    let deliveryResults = await notificationService.notify(
+      events: freshEvents,
+      snapshot: latestSnapshot,
+      preferences: preferences
+    )
 
     if persistResult {
       state.snapshot = latestSnapshot
@@ -123,7 +142,12 @@ struct RefreshCoordinator {
       snapshot: latestSnapshot,
       events: freshEvents,
       lastRefreshAt: now,
-      errorDescription: nil
+      errorDescription: nil,
+      debugSummary: makeDebugSummary(
+        detectedEvents: detectedEvents,
+        freshEvents: freshEvents,
+        deliveryResults: deliveryResults
+      )
     )
   }
 
@@ -140,7 +164,8 @@ struct RefreshCoordinator {
         snapshot: resolvedState.snapshot,
         events: [],
         lastRefreshAt: now,
-        errorDescription: "Couldn't refresh Coders.mu right now."
+        errorDescription: "Couldn't refresh Coders.mu right now.",
+        debugSummary: "Refresh failed: \(error.localizedDescription)"
       )
     }
 
@@ -150,7 +175,30 @@ struct RefreshCoordinator {
       snapshot: resolvedState.snapshot,
       events: [],
       lastRefreshAt: now,
-      errorDescription: "Couldn't refresh Coders.mu right now."
+      errorDescription: "Couldn't refresh Coders.mu right now.",
+      debugSummary: "Refresh failed: \(error.localizedDescription)"
     )
+  }
+
+  private func makeDebugSummary(
+    detectedEvents: [MeetupChangeEvent],
+    freshEvents: [MeetupChangeEvent],
+    deliveryResults: [NotificationDeliveryResult]
+  ) -> String {
+    if detectedEvents.isEmpty {
+      return "Refresh completed. No tracked changes detected."
+    }
+
+    if freshEvents.isEmpty {
+      let summaries = detectedEvents.map(\.summary).joined(separator: " | ")
+      return "Refresh completed. Change already notified earlier: \(summaries)"
+    }
+
+    let scheduledCount = deliveryResults.filter { $0.kind == .scheduled }.count
+    let suppressedCount = deliveryResults.filter { $0.kind == .suppressed }.count
+    let failedCount = deliveryResults.filter { $0.kind == .failed }.count
+    let summaries = freshEvents.map(\.summary).joined(separator: " | ")
+
+    return "Detected \(freshEvents.count) tracked change(s): \(summaries). Notifications: \(scheduledCount) scheduled, \(suppressedCount) suppressed, \(failedCount) failed."
   }
 }

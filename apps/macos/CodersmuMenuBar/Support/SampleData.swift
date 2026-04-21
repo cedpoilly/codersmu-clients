@@ -6,6 +6,7 @@ enum SampleData {
       slug: "2026-05-23-the-may-meetup",
       title: "The May Meetup",
       description: nil,
+      agendaSummary: nil,
       startsAt: ISO8601DateFormatter().date(from: "2026-05-23T06:00:00Z"),
       endsAt: ISO8601DateFormatter().date(from: "2026-05-23T10:00:00Z"),
       venueName: "Astek Mauritius",

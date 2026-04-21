@@ -134,6 +134,8 @@ struct MeetupDTO: Decodable {
   let slug: String
   let title: String
   let summary: String
+  let descriptionText: String?
+  let agendaSummary: String?
   let startsAt: String
   let endsAt: String
   let timezone: String
@@ -155,10 +157,14 @@ struct MeetupDTO: Decodable {
       throw APIError.invalidPayload("Coders.mu returned an unusable meetup URL for \(id).")
     }
 
+    let normalizedAgendaSummary = normalizedAgendaSummaryFromSessions
+    let normalizedDescription = normalizedDescriptionText(fallingBackFrom: normalizedAgendaSummary)
+
     return MeetupSnapshot(
       slug: slug,
       title: title,
-      description: summary.normalizedSummary,
+      description: normalizedDescription,
+      agendaSummary: normalizedAgendaSummary,
       startsAt: parsedDate(startsAt),
       endsAt: parsedDate(endsAt),
       venueName: location.name.normalizedLocationValue,
@@ -191,6 +197,36 @@ struct MeetupDTO: Decodable {
     default:
       return .upcoming
     }
+  }
+
+  private var normalizedAgendaSummaryFromSessions: String? {
+    if let agendaSummary = agendaSummary?.normalizedSummary {
+      return agendaSummary
+    }
+
+    let sessionTitles = sessions
+      .map(\.title)
+      .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+      .filter { !$0.isEmpty }
+
+    guard !sessionTitles.isEmpty else {
+      return nil
+    }
+
+    return sessionTitles.joined(separator: " | ")
+  }
+
+  private func normalizedDescriptionText(fallingBackFrom normalizedAgendaSummary: String?) -> String? {
+    if let descriptionText = descriptionText?.normalizedSummary {
+      return descriptionText
+    }
+
+    let normalizedSummary = summary.normalizedSummary
+    guard normalizedSummary != normalizedAgendaSummary else {
+      return nil
+    }
+
+    return normalizedSummary
   }
 }
 
@@ -284,6 +320,8 @@ struct HostedMeetupDTO: Decodable {
         }
       )
     }
+    let normalizedDescription = normalizedDescription
+    let normalizedAgendaSummary = normalizedAgendaSummary(normalizedSessions: normalizedSessions)
 
     return MeetupDTO(
       id: id,
@@ -291,7 +329,9 @@ struct HostedMeetupDTO: Decodable {
         ? slug!.trimmingCharacters(in: .whitespacesAndNewlines)
         : "\(date.prefix(10))-\(slugify(cleanTitle))",
       title: cleanTitle,
-      summary: normalizedSummary(normalizedSessions: normalizedSessions) ?? "No meetup description published yet.",
+      summary: normalizedDescription ?? normalizedAgendaSummary ?? "No meetup description published yet.",
+      descriptionText: normalizedDescription,
+      agendaSummary: normalizedAgendaSummary,
       startsAt: startsAt?.iso8601String ?? buildUTCDate(date: date, time: normalizeTime(startTime))?.iso8601String ?? "",
       endsAt: endsAt?.iso8601String ?? buildUTCDate(date: date, time: normalizeTime(startTime))?.addingTimeInterval(Double(defaultDurationHours * 60 * 60)).iso8601String ?? "",
       timezone: "Indian/Mauritius",
@@ -362,11 +402,7 @@ struct HostedMeetupDTO: Decodable {
     )
   }
 
-  private func normalizedSummary(normalizedSessions: [MeetupSessionDTO]) -> String? {
-    if let descriptionSummary = normalizedDescription {
-      return descriptionSummary
-    }
-
+  private func normalizedAgendaSummary(normalizedSessions: [MeetupSessionDTO]) -> String? {
     let sessionTitles = normalizedSessions
       .map(\.title)
       .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
@@ -517,12 +553,16 @@ struct CodersMuMeetupDTO: Decodable {
         }
       )
     } ?? []
+    let normalizedDescription = normalizedDescription
+    let normalizedAgendaSummary = normalizedAgendaSummary
 
     return MeetupDTO(
       id: id,
       slug: "\(date.prefix(10))-\(slugify(cleanTitle))",
       title: cleanTitle,
-      summary: normalizedSummary ?? "No meetup description published yet.",
+      summary: normalizedDescription ?? normalizedAgendaSummary ?? "No meetup description published yet.",
+      descriptionText: normalizedDescription,
+      agendaSummary: normalizedAgendaSummary,
       startsAt: startsAt?.iso8601String ?? buildUTCDate(date: date, time: normalizeTime(startTime))?.iso8601String ?? "",
       endsAt: endsAt?.iso8601String ?? buildUTCDate(date: date, time: normalizeTime(startTime))?.addingTimeInterval(Double(defaultDurationHours * 60 * 60)).iso8601String ?? "",
       timezone: "Indian/Mauritius",
@@ -558,11 +598,7 @@ struct CodersMuMeetupDTO: Decodable {
     )
   }
 
-  private var normalizedSummary: String? {
-    if let descriptionSummary = normalizedDescription {
-      return descriptionSummary
-    }
-
+  private var normalizedAgendaSummary: String? {
     let sessionTitles = (sessions ?? [])
       .compactMap { session in
         stripHTML(session.title)?.trimmingCharacters(in: .whitespacesAndNewlines)

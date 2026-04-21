@@ -14,6 +14,8 @@ enum DeveloperInjectedEvent: String, Codable, CaseIterable, Identifiable {
   case nextMeetupCreated
   case dateChanged
   case locationChanged
+  case descriptionChanged
+  case agendaChanged
   case seatThresholdReached
   case meetupPostponed
 
@@ -29,6 +31,10 @@ enum DeveloperInjectedEvent: String, Codable, CaseIterable, Identifiable {
       return "Simulate Date Change"
     case .locationChanged:
       return "Simulate Location Change"
+    case .descriptionChanged:
+      return "Simulate Description Change"
+    case .agendaChanged:
+      return "Simulate Agenda Change"
     case .seatThresholdReached:
       return "Simulate 5 Seats Left"
     case .meetupPostponed:
@@ -71,6 +77,20 @@ enum DeveloperInjectedEvent: String, Codable, CaseIterable, Identifiable {
       latestSnapshot.venueAddress = "Override Tower \(marker.suffix(6)), Ebene"
       latestSnapshot.lastSyncedAt = Date()
       return DeveloperSimulationScenario(previousSnapshot: previousSnapshot, latestSnapshot: latestSnapshot)
+    case .descriptionChanged:
+      let previousSnapshot = snapshot ?? DeveloperInjectedEvent.makeSyntheticMeetup()
+      var latestSnapshot = previousSnapshot
+      let marker = UUID().uuidString.lowercased()
+      latestSnapshot.description = "Updated meetup description \(marker.prefix(8))."
+      latestSnapshot.lastSyncedAt = Date()
+      return DeveloperSimulationScenario(previousSnapshot: previousSnapshot, latestSnapshot: latestSnapshot)
+    case .agendaChanged:
+      let previousSnapshot = snapshot ?? DeveloperInjectedEvent.makeSyntheticMeetup()
+      var latestSnapshot = previousSnapshot
+      let marker = UUID().uuidString.lowercased()
+      latestSnapshot.agendaSummary = "Opening keynote \(marker.prefix(6)) | Lightning talks"
+      latestSnapshot.lastSyncedAt = Date()
+      return DeveloperSimulationScenario(previousSnapshot: previousSnapshot, latestSnapshot: latestSnapshot)
     case .seatThresholdReached:
       var previousSnapshot = snapshot ?? DeveloperInjectedEvent.makeSyntheticMeetup()
       var latestSnapshot = previousSnapshot
@@ -102,6 +122,7 @@ enum DeveloperInjectedEvent: String, Codable, CaseIterable, Identifiable {
       slug: "dev-baseline-\(Int(now.timeIntervalSince1970))",
       title: "Developer Test Meetup",
       description: "Synthetic meetup used to exercise the notification pipeline.",
+      agendaSummary: "Intro to SwiftUI | Shipping the Coders.mu clients",
       startsAt: start,
       endsAt: end,
       venueName: "Dev Venue",

@@ -6,6 +6,8 @@ enum MeetupChangeKind: String, Codable, Hashable {
   case dateChanged
   case locationConfirmed
   case locationChanged
+  case descriptionChanged
+  case agendaChanged
   case rsvpOpened
   case seatThresholdReached
   case meetupCanceledOrPostponed
