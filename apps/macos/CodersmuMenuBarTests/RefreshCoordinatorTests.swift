@@ -3,6 +3,23 @@ import XCTest
 
 @MainActor
 final class RefreshCoordinatorTests: XCTestCase {
+  private func makeTestModel(
+    coordinator: RefreshCoordinator,
+    defaults: UserDefaults,
+    scheduler: RefreshScheduler = RefreshScheduler(intervalProvider: { .seconds(3600) }),
+    openNotificationSettingsPanel: @escaping @MainActor () -> Void = {}
+  ) -> AppModel {
+    AppModel(
+      coordinator: coordinator,
+      scheduler: scheduler,
+      preferencesStore: AppPreferencesStore(userDefaults: defaults),
+      launchAtLoginManager: LaunchAtLoginManager(),
+      launchAtLoginStatusProvider: { false },
+      setLaunchAtLoginEnabledHandler: { _ in },
+      openNotificationSettingsPanel: openNotificationSettingsPanel
+    )
+  }
+
   func testRefreshReportsSnapshotSaveFailures() async {
     let snapshot = SampleData.nextMeetup
     let source = StubMeetupSource(snapshot: snapshot)
@@ -155,12 +172,7 @@ final class RefreshCoordinatorTests: XCTestCase {
       changeDetector: ChangeDetector(),
       notificationService: notificationService
     )
-    let model = AppModel(
-      coordinator: coordinator,
-      scheduler: RefreshScheduler(intervalProvider: { .seconds(3600) }),
-      preferencesStore: AppPreferencesStore(userDefaults: defaults),
-      launchAtLoginManager: LaunchAtLoginManager()
-    )
+    let model = makeTestModel(coordinator: coordinator, defaults: defaults)
 
     await model.simulateDeveloperEvent(.locationChanged)
 
@@ -180,17 +192,79 @@ final class RefreshCoordinatorTests: XCTestCase {
       changeDetector: ChangeDetector(),
       notificationService: notificationService
     )
-    let model = AppModel(
-      coordinator: coordinator,
-      scheduler: RefreshScheduler(intervalProvider: { .seconds(3600) }),
-      preferencesStore: AppPreferencesStore(userDefaults: defaults),
-      launchAtLoginManager: LaunchAtLoginManager()
-    )
+    let model = makeTestModel(coordinator: coordinator, defaults: defaults)
 
     await model.simulateDeveloperEvent(.nextMeetupCreated)
 
     XCTAssertEqual(model.snapshot?.title, "Developer Test Meetup")
     XCTAssertEqual(model.refreshState, RefreshState.idle)
+  }
+
+  func testStartOpensNotificationSettingsWhenNotificationsNeedAttention() async {
+    let defaults = UserDefaults(suiteName: "RefreshCoordinatorTests-\(UUID().uuidString)")!
+    let notificationService = RecordingNotificationService()
+    notificationService.debugState = NotificationDebugState(
+      authorizationState: .denied,
+      alertsEnabled: false,
+      soundsEnabled: false,
+      notificationCenterEnabled: false
+    )
+
+    var openedNotificationSettings = 0
+    let coordinator = RefreshCoordinator(
+      source: StubMeetupSource(snapshot: nil),
+      snapshotStore: RecordingSnapshotStore(state: .empty),
+      changeDetector: ChangeDetector(),
+      notificationService: notificationService
+    )
+    let scheduler = RefreshScheduler(intervalProvider: { .seconds(3600) })
+    let model = makeTestModel(
+      coordinator: coordinator,
+      defaults: defaults,
+      scheduler: scheduler,
+      openNotificationSettingsPanel: {
+        openedNotificationSettings += 1
+      }
+    )
+
+    await model.start()
+    scheduler.stop()
+
+    XCTAssertEqual(openedNotificationSettings, 1)
+    XCTAssertEqual(model.notificationDebugMessage, "Open macOS Notification Settings to enable Coders.mu notifications.")
+  }
+
+  func testStartDoesNotOpenNotificationSettingsWhenNotificationsAreEnabled() async {
+    let defaults = UserDefaults(suiteName: "RefreshCoordinatorTests-\(UUID().uuidString)")!
+    let notificationService = RecordingNotificationService()
+    notificationService.debugState = NotificationDebugState(
+      authorizationState: .authorized,
+      alertsEnabled: true,
+      soundsEnabled: true,
+      notificationCenterEnabled: true
+    )
+
+    var openedNotificationSettings = 0
+    let coordinator = RefreshCoordinator(
+      source: StubMeetupSource(snapshot: nil),
+      snapshotStore: RecordingSnapshotStore(state: .empty),
+      changeDetector: ChangeDetector(),
+      notificationService: notificationService
+    )
+    let scheduler = RefreshScheduler(intervalProvider: { .seconds(3600) })
+    let model = makeTestModel(
+      coordinator: coordinator,
+      defaults: defaults,
+      scheduler: scheduler,
+      openNotificationSettingsPanel: {
+        openedNotificationSettings += 1
+      }
+    )
+
+    await model.start()
+    scheduler.stop()
+
+    XCTAssertEqual(openedNotificationSettings, 0)
   }
 
   func testRepeatedLocationSimulationProducesFreshNotificationEvents() async {
@@ -215,12 +289,7 @@ final class RefreshCoordinatorTests: XCTestCase {
       changeDetector: ChangeDetector(),
       notificationService: notificationService
     )
-    let model = AppModel(
-      coordinator: coordinator,
-      scheduler: RefreshScheduler(intervalProvider: { .seconds(3600) }),
-      preferencesStore: AppPreferencesStore(userDefaults: defaults),
-      launchAtLoginManager: LaunchAtLoginManager()
-    )
+    let model = makeTestModel(coordinator: coordinator, defaults: defaults)
     model.snapshot = baselineSnapshot
 
     await model.simulateDeveloperEvent(DeveloperInjectedEvent.locationChanged)
@@ -256,12 +325,7 @@ final class RefreshCoordinatorTests: XCTestCase {
       changeDetector: ChangeDetector(),
       notificationService: notificationService
     )
-    let model = AppModel(
-      coordinator: coordinator,
-      scheduler: RefreshScheduler(intervalProvider: { .seconds(3600) }),
-      preferencesStore: AppPreferencesStore(userDefaults: defaults),
-      launchAtLoginManager: LaunchAtLoginManager()
-    )
+    let model = makeTestModel(coordinator: coordinator, defaults: defaults)
     model.snapshot = baselineSnapshot
 
     await model.simulateDeveloperEvent(.descriptionChanged)
@@ -290,12 +354,7 @@ final class RefreshCoordinatorTests: XCTestCase {
       changeDetector: ChangeDetector(),
       notificationService: notificationService
     )
-    let model = AppModel(
-      coordinator: coordinator,
-      scheduler: RefreshScheduler(intervalProvider: { .seconds(3600) }),
-      preferencesStore: AppPreferencesStore(userDefaults: defaults),
-      launchAtLoginManager: LaunchAtLoginManager()
-    )
+    let model = makeTestModel(coordinator: coordinator, defaults: defaults)
     model.snapshot = baselineSnapshot
 
     await model.simulateDeveloperEvent(.agendaChanged)
@@ -325,12 +384,7 @@ final class RefreshCoordinatorTests: XCTestCase {
       changeDetector: ChangeDetector(),
       notificationService: notificationService
     )
-    let model = AppModel(
-      coordinator: coordinator,
-      scheduler: RefreshScheduler(intervalProvider: { .seconds(3600) }),
-      preferencesStore: AppPreferencesStore(userDefaults: defaults),
-      launchAtLoginManager: LaunchAtLoginManager()
-    )
+    let model = makeTestModel(coordinator: coordinator, defaults: defaults)
     model.snapshot = baselineSnapshot
 
     await model.simulateDeveloperEvent(DeveloperInjectedEvent.seatThresholdReached)
@@ -433,12 +487,7 @@ final class RefreshCoordinatorTests: XCTestCase {
       changeDetector: ChangeDetector(),
       notificationService: notificationService
     )
-    let model = AppModel(
-      coordinator: coordinator,
-      scheduler: RefreshScheduler(intervalProvider: { .seconds(3600) }),
-      preferencesStore: AppPreferencesStore(userDefaults: defaults),
-      launchAtLoginManager: LaunchAtLoginManager()
-    )
+    let model = makeTestModel(coordinator: coordinator, defaults: defaults)
     model.snapshot = baselineSnapshot
 
     await model.simulateDeveloperEvent(DeveloperInjectedEvent.meetupPostponed)
@@ -520,6 +569,7 @@ private final class RecordingSnapshotStore: SnapshotStore {
 private final class RecordingNotificationService: NotificationService {
   private(set) var notifiedEvents: [MeetupChangeEvent] = []
   private(set) var notificationBatches: [[MeetupChangeEvent]] = []
+  var debugState: NotificationDebugState = .unavailable
 
   func requestAuthorization() async {}
 
@@ -527,6 +577,10 @@ private final class RecordingNotificationService: NotificationService {
     notifiedEvents = events
     notificationBatches.append(events)
     return events.map { _ in .scheduled("Scheduled in tests.") }
+  }
+
+  func notificationDebugState() async -> NotificationDebugState {
+    debugState
   }
 }
 

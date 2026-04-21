@@ -85,6 +85,12 @@ struct SettingsView: View {
             }
           }
         }
+
+        if appModel.notificationDebugState.needsAttention {
+          Button("Open macOS Notification Settings") {
+            appModel.openNotificationSettings()
+          }
+        }
       }
 
       Section("App") {

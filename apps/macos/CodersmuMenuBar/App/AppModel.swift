@@ -1,3 +1,4 @@
+import AppKit
 import Foundation
 import Observation
 
@@ -42,22 +43,27 @@ final class AppModel {
   @ObservationIgnored private let coordinator: RefreshCoordinator
   @ObservationIgnored private let scheduler: RefreshScheduler
   @ObservationIgnored private let preferencesStore: AppPreferencesStore
-  @ObservationIgnored private let launchAtLoginManager: LaunchAtLoginManager
+  @ObservationIgnored private let setLaunchAtLoginEnabledHandler: (Bool) throws -> Void
+  @ObservationIgnored private let openNotificationSettingsPanel: @MainActor () -> Void
   @ObservationIgnored private var hasStarted = false
 
   init(
     coordinator: RefreshCoordinator,
     scheduler: RefreshScheduler,
     preferencesStore: AppPreferencesStore,
-    launchAtLoginManager: LaunchAtLoginManager
+    launchAtLoginManager: LaunchAtLoginManager,
+    launchAtLoginStatusProvider: (() -> Bool)? = nil,
+    setLaunchAtLoginEnabledHandler: ((Bool) throws -> Void)? = nil,
+    openNotificationSettingsPanel: @escaping @MainActor () -> Void = AppModel.openNotificationSettingsPanel
   ) {
     self.coordinator = coordinator
     self.scheduler = scheduler
     self.preferencesStore = preferencesStore
-    self.launchAtLoginManager = launchAtLoginManager
+    self.setLaunchAtLoginEnabledHandler = setLaunchAtLoginEnabledHandler ?? launchAtLoginManager.setEnabled
+    self.openNotificationSettingsPanel = openNotificationSettingsPanel
 
     var loadedPreferences = preferencesStore.load()
-    loadedPreferences.launchAtLoginEnabled = launchAtLoginManager.isEnabled()
+    loadedPreferences.launchAtLoginEnabled = launchAtLoginStatusProvider?() ?? launchAtLoginManager.isEnabled()
     self.preferences = loadedPreferences
   }
 
@@ -113,6 +119,11 @@ final class AppModel {
     scheduler.start()
     await coordinator.requestNotificationAuthorization()
     await refreshNotificationDebugState()
+
+    if notificationDebugState.needsAttention {
+      notificationDebugMessage = "Open macOS Notification Settings to enable Coders.mu notifications."
+      openNotificationSettingsPanel()
+    }
   }
 
   func refresh(trigger: RefreshTrigger = .manual) async {
@@ -162,7 +173,7 @@ final class AppModel {
 
   func setLaunchAtLoginEnabled(_ isEnabled: Bool) {
     do {
-      try launchAtLoginManager.setEnabled(isEnabled)
+      try setLaunchAtLoginEnabledHandler(isEnabled)
       preferences.launchAtLoginEnabled = isEnabled
       launchAtLoginErrorMessage = nil
       persistPreferences()
@@ -209,6 +220,11 @@ final class AppModel {
     case .unsupported:
       notificationDebugMessage = "Notification permission status is unavailable."
     }
+  }
+
+  func openNotificationSettings() {
+    notificationDebugMessage = "Opening macOS Notification Settings for Coders.mu."
+    openNotificationSettingsPanel()
   }
 
   func sendTestNotification() async {
@@ -259,5 +275,17 @@ final class AppModel {
 
   private func persistPreferences() {
     preferencesStore.save(preferences)
+  }
+
+  private static func openNotificationSettingsPanel() {
+    let settingsPath = "x-apple.systempreferences:com.apple.Notifications-Settings.extension"
+    guard
+      let bundleId = Bundle.main.bundleIdentifier?.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
+      let url = URL(string: "\(settingsPath)?id=\(bundleId)")
+    else {
+      return
+    }
+
+    NSWorkspace.shared.open(url)
   }
 }
