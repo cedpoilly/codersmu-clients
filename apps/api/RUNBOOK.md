@@ -50,6 +50,12 @@ The same probe now runs in GitHub Actions via the `Hosted API` workflow:
 
 Treat that workflow as an uptime probe for the live deployment, not proof that the latest Git commit is already running in Coolify.
 
+Automatic production deploys run separately in GitHub Actions via `Hosted API Deploy`:
+
+- triggered after a successful `CI` push workflow on `main`
+- can also be run manually with `workflow_dispatch`
+- requires the repository secret `COOLIFY_DEPLOY_WEBHOOK_URL`
+
 Expected health response:
 
 ```json
@@ -58,11 +64,19 @@ Expected health response:
 
 ## Deploy
 
-1. Push `main`.
-2. Trigger a fresh Coolify deployment for `codersmu-api`.
-3. Wait for the deployment to finish.
-4. Run the verify steps above.
-5. If you want a GitHub-side confirmation too, run the `Hosted API` workflow manually after deployment finishes.
+1. Push or merge to `main`.
+2. Let the `CI` workflow finish successfully.
+3. `Hosted API Deploy` triggers Coolify via `COOLIFY_DEPLOY_WEBHOOK_URL`.
+4. The deploy workflow polls `https://codersmu.cedpoilly.dev/health` until `releaseSha` matches the pushed commit.
+5. Run the verify steps above if you want an additional manual smoke test.
+
+If `COOLIFY_DEPLOY_WEBHOOK_URL` is missing, `Hosted API Deploy` fails fast with a configuration error and production stays on the previous release.
+
+### Required GitHub secret
+
+- `COOLIFY_DEPLOY_WEBHOOK_URL`
+
+Set this to the Coolify deploy webhook for the `codersmu-api` app. The workflow sends a `POST` request to that URL and then waits for `/health` to report the new `releaseSha`.
 
 If `CODERSMU_RELEASE_SHA` is set in the runtime environment, `/health` and the `x-codersmu-release-sha` header expose the live deployed revision directly.
 
