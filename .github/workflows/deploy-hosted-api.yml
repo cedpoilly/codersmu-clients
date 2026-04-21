@@ -64,8 +64,85 @@ jobs:
 
           if [[ -z "${COOLIFY_DEPLOY_TOKEN}" ]]; then
             echo "COOLIFY_DEPLOY_TOKEN is not configured." >&2
-            echo "Add a Coolify API token with Deploy permission as a repository secret to enable auto-deploy." >&2
+            echo "Add a Coolify API token with Deploy and environment write permissions as a repository secret to enable auto-deploy." >&2
             exit 1
+          fi
+
+      - name: Sync runtime release SHA in Coolify
+        if: ${{ github.event_name == 'workflow_dispatch' || steps.freshness.outputs.should_deploy == 'true' }}
+        run: |
+          set -euo pipefail
+
+          readarray -t coolify_values < <(
+            python - <<'PY'
+from urllib.parse import parse_qs, urlparse
+import os
+import sys
+
+raw = os.environ["COOLIFY_DEPLOY_WEBHOOK_URL"]
+parsed = urlparse(raw)
+uuid = parse_qs(parsed.query).get("uuid", [""])[0]
+base = f"{parsed.scheme}://{parsed.netloc}"
+api_base = f"{base}/api/v1"
+
+if not uuid:
+    print("Missing uuid query parameter in COOLIFY_DEPLOY_WEBHOOK_URL.", file=sys.stderr)
+    sys.exit(1)
+
+print(api_base)
+print(uuid)
+PY
+          )
+
+          COOLIFY_API_BASE="${coolify_values[0]}"
+          COOLIFY_APPLICATION_UUID="${coolify_values[1]}"
+
+          env_list="$(
+            curl -fsSL \
+              --header "Authorization: Bearer ${COOLIFY_DEPLOY_TOKEN}" \
+              "${COOLIFY_API_BASE}/applications/${COOLIFY_APPLICATION_UUID}/envs"
+          )"
+
+          env_exists="$(
+            ENV_LIST="${env_list}" python - <<'PY'
+import json
+import os
+
+envs = json.loads(os.environ["ENV_LIST"])
+print("true" if any(item.get("key") == "CODERSMU_RELEASE_SHA" for item in envs) else "false")
+PY
+          )"
+
+          request_body="$(
+            python - <<'PY'
+import json
+import os
+
+print(json.dumps({
+    "key": "CODERSMU_RELEASE_SHA",
+    "value": os.environ["EXPECTED_SHA"],
+    "is_preview": False,
+    "is_literal": True,
+    "is_multiline": False,
+    "is_shown_once": False,
+}))
+PY
+          )"
+
+          if [[ "${env_exists}" == "true" ]]; then
+            curl -fsSL \
+              --request PATCH \
+              --header "Authorization: Bearer ${COOLIFY_DEPLOY_TOKEN}" \
+              --header "Content-Type: application/json" \
+              --data "${request_body}" \
+              "${COOLIFY_API_BASE}/applications/${COOLIFY_APPLICATION_UUID}/envs"
+          else
+            curl -fsSL \
+              --request POST \
+              --header "Authorization: Bearer ${COOLIFY_DEPLOY_TOKEN}" \
+              --header "Content-Type: application/json" \
+              --data "${request_body}" \
+              "${COOLIFY_API_BASE}/applications/${COOLIFY_APPLICATION_UUID}/envs"
           fi
 
       - name: Trigger Coolify deployment
