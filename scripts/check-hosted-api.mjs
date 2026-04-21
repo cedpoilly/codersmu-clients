@@ -35,6 +35,11 @@ function slugify(value) {
 }
 
 function getMeetupSlug(meetup) {
+  const canonicalSlug = typeof meetup.slug === 'string' ? meetup.slug.trim() : ''
+  if (canonicalSlug) {
+    return canonicalSlug
+  }
+
   if (typeof meetup.date === 'string' && meetup.date.slice(0, 10)) {
     return `${meetup.date.slice(0, 10)}-${slugify(String(meetup.title ?? ''))}`
   }
