@@ -144,7 +144,9 @@ struct MeetupDTO: Decodable {
   let sponsors: [MeetupSponsorDTO]
   let attendeeCount: Int?
   let seatsAvailable: Int?
+  let capacityTotal: Int?
   let rsvpCount: Int?
+  let seatsRemaining: Int?
   let acceptingRsvp: Bool?
   let links: MeetupLinksDTO
 
@@ -166,7 +168,7 @@ struct MeetupDTO: Decodable {
         .trimmedNilIfEmpty,
       meetupURL: meetupURL,
       rsvpURL: normalizedRsvpURL(meetupURL: meetupURL),
-      seatsRemaining: seatsAvailable,
+      seatsRemaining: seatsRemaining ?? seatsAvailable,
       status: snapshotStatus,
       lastSyncedAt: lastSyncedAt
     )
@@ -236,6 +238,7 @@ struct HostedMeetupSponsorDTO: Decodable {
 
 struct HostedMeetupDTO: Decodable {
   let id: String
+  let slug: String?
   let title: String
   let description: String?
   let date: String?
@@ -248,6 +251,9 @@ struct HostedMeetupDTO: Decodable {
   let sponsors: [HostedMeetupSponsorDTO]
   let attendeeCount: Int?
   let seatsAvailable: Int?
+  let capacityTotal: Int?
+  let rsvpCount: Int?
+  let seatsRemaining: Int?
   let acceptingRsvp: CodersMuBoolish?
   let rsvpClosingDate: String?
   let rsvpLink: String?
@@ -281,7 +287,9 @@ struct HostedMeetupDTO: Decodable {
 
     return MeetupDTO(
       id: id,
-      slug: "\(date.prefix(10))-\(slugify(cleanTitle))",
+      slug: slug?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
+        ? slug!.trimmingCharacters(in: .whitespacesAndNewlines)
+        : "\(date.prefix(10))-\(slugify(cleanTitle))",
       title: cleanTitle,
       summary: normalizedSummary(normalizedSessions: normalizedSessions) ?? "No meetup description published yet.",
       startsAt: startsAt?.iso8601String ?? buildUTCDate(date: date, time: normalizeTime(startTime))?.iso8601String ?? "",
@@ -304,7 +312,9 @@ struct HostedMeetupDTO: Decodable {
       },
       attendeeCount: attendeeCount,
       seatsAvailable: seatsAvailable,
-      rsvpCount: nil,
+      capacityTotal: capacityTotal ?? seatsAvailable,
+      rsvpCount: rsvpCount,
+      seatsRemaining: seatsRemaining ?? HostedMeetupDTO.computeSeatsRemaining(capacityTotal: capacityTotal ?? seatsAvailable, rsvpCount: rsvpCount),
       acceptingRsvp: acceptingRsvp?.value,
       links: MeetupLinksDTO(
         meetup: meetupURL,
@@ -417,6 +427,14 @@ struct HostedMeetupDTO: Decodable {
 
     return nil
   }
+
+  private static func computeSeatsRemaining(capacityTotal: Int?, rsvpCount: Int?) -> Int? {
+    guard let capacityTotal, let rsvpCount else {
+      return nil
+    }
+
+    return max(capacityTotal - rsvpCount, 0)
+  }
 }
 
 struct CodersMuMeetupDTO: Decodable {
@@ -525,7 +543,9 @@ struct CodersMuMeetupDTO: Decodable {
       },
       attendeeCount: attendeeCount,
       seatsAvailable: seatsAvailable,
+      capacityTotal: seatsAvailable,
       rsvpCount: rsvpCount,
+      seatsRemaining: Self.computeSeatsRemaining(capacityTotal: seatsAvailable, rsvpCount: rsvpCount),
       acceptingRsvp: acceptingRsvp?.value,
       links: MeetupLinksDTO(
         meetup: meetupURL,
@@ -603,6 +623,14 @@ struct CodersMuMeetupDTO: Decodable {
     }
 
     return nil
+  }
+
+  private static func computeSeatsRemaining(capacityTotal: Int?, rsvpCount: Int?) -> Int? {
+    guard let capacityTotal, let rsvpCount else {
+      return nil
+    }
+
+    return max(capacityTotal - rsvpCount, 0)
   }
 }
 

@@ -154,6 +154,8 @@ struct CliMeetup: Decodable {
   let acceptingRsvp: FlexibleBool?
   let status: String
   let seatsAvailable: Int?
+  let capacityTotal: Int?
+  let seatsRemaining: Int?
   let rsvpLink: String?
 
   func snapshot(lastSyncedAt: Date) -> MeetupSnapshot {
@@ -170,7 +172,7 @@ struct CliMeetup: Decodable {
       venueAddress: location?.normalizedLocationValue,
       meetupURL: meetupURL,
       rsvpURL: normalizedRsvpURL,
-      seatsRemaining: seatsAvailable,
+      seatsRemaining: seatsRemaining ?? seatsAvailable,
       status: normalizedStatus,
       lastSyncedAt: lastSyncedAt
     )
@@ -346,6 +348,7 @@ private struct LegacyCliMeetup: Decodable {
   let status: String?
   let location: LegacyLocation?
   let seatsAvailable: Int?
+  let seatsRemaining: Int?
   let acceptingRsvp: FlexibleBool?
   let links: LegacyLinks?
 
@@ -371,7 +374,7 @@ private struct LegacyCliMeetup: Decodable {
       venueAddress: venueAddress,
       meetupURL: meetupURL,
       rsvpURL: normalizedRsvpURL,
-      seatsRemaining: seatsAvailable,
+      seatsRemaining: seatsRemaining ?? seatsAvailable,
       status: normalizedStatus,
       lastSyncedAt: lastSyncedAt
     )

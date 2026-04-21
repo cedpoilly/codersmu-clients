@@ -38,14 +38,21 @@ describe('fetchFrontendMuMeetups', () => {
         mapUrl: 'https://maps.example.com/future-meetup',
         parkingLocation: 'https://parking.example.com/future-meetup',
       }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(`
+        <div
+          id="app"
+          data-page="{&quot;props&quot;:{&quot;rsvpCount&quot;:5}}"
+        ></div>
+      `, { status: 200 }))
 
     vi.stubGlobal('fetch', fetchMock)
 
     const cache = await fetchFrontendMuMeetups()
 
-    expect(fetchMock).toHaveBeenCalledTimes(2)
+    expect(fetchMock).toHaveBeenCalledTimes(3)
     expect(fetchMock.mock.calls[0]?.[0]).toBe('https://coders.mu/api/public/v1/meetups')
     expect(fetchMock.mock.calls[1]?.[0]).toBe('https://coders.mu/api/public/v1/meetups/future-meetup')
+    expect(fetchMock.mock.calls[2]?.[0]).toBe('https://coders.mu/meetup/future-meetup')
     expect(fetchMock.mock.calls[0]?.[1]?.signal).toBeInstanceOf(AbortSignal)
 
     expect(cache.source).toBe('https://coders.mu/api/public/v1/meetups')
@@ -62,6 +69,9 @@ describe('fetchFrontendMuMeetups', () => {
       location: 'Vivea Business Park',
       status: 'published',
       seatsAvailable: 12,
+      capacityTotal: 12,
+      rsvpCount: 5,
+      seatsRemaining: 7,
       acceptingRsvp: 1,
       rsvpLink: 'https://coders.mu/rsvp/future-meetup',
       mapUrl: 'https://maps.example.com/future-meetup',
@@ -193,6 +203,43 @@ describe('fetchFrontendMuMeetups', () => {
       title: 'The Broken Meetup',
       date: '2099-04-25',
       status: 'published',
+    })
+  })
+
+  it('computes explicit remaining seats from page RSVP metadata when the API omits it', async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify([
+        {
+          id: 'future-meetup',
+          title: 'The Test Meetup',
+          date: '2099-04-18',
+          status: 'published',
+        },
+      ]), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({
+        id: 'future-meetup',
+        title: 'The Test Meetup',
+        date: '2099-04-18',
+        status: 'published',
+        seatsAvailable: 30,
+        rsvpCount: null,
+      }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(`
+        <div
+          id="app"
+          data-page="{&quot;props&quot;:{&quot;rsvpCount&quot;:5}}"
+        ></div>
+      `, { status: 200 }))
+
+    vi.stubGlobal('fetch', fetchMock)
+
+    const cache = await fetchFrontendMuMeetups()
+
+    expect(cache.meetups[0]).toMatchObject({
+      seatsAvailable: 30,
+      capacityTotal: 30,
+      rsvpCount: 5,
+      seatsRemaining: 25,
     })
   })
 
