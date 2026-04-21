@@ -3,6 +3,23 @@ import XCTest
 
 @MainActor
 final class RefreshCoordinatorTests: XCTestCase {
+  private func makeTestModel(
+    coordinator: RefreshCoordinator,
+    defaults: UserDefaults,
+    scheduler: RefreshScheduler = RefreshScheduler(intervalProvider: { .seconds(3600) }),
+    openNotificationSettingsPanel: @escaping @MainActor () -> Void = {}
+  ) -> AppModel {
+    AppModel(
+      coordinator: coordinator,
+      scheduler: scheduler,
+      preferencesStore: AppPreferencesStore(userDefaults: defaults),
+      launchAtLoginManager: LaunchAtLoginManager(),
+      launchAtLoginStatusProvider: { false },
+      setLaunchAtLoginEnabledHandler: { _ in },
+      openNotificationSettingsPanel: openNotificationSettingsPanel
+    )
+  }
+
   func testRefreshReportsSnapshotSaveFailures() async {
     let snapshot = SampleData.nextMeetup
     let source = StubMeetupSource(snapshot: snapshot)
@@ -155,12 +172,7 @@ final class RefreshCoordinatorTests: XCTestCase {
       changeDetector: ChangeDetector(),
       notificationService: notificationService
     )
-    let model = AppModel(
-      coordinator: coordinator,
-      scheduler: RefreshScheduler(intervalProvider: { .seconds(3600) }),
-      preferencesStore: AppPreferencesStore(userDefaults: defaults),
-      launchAtLoginManager: LaunchAtLoginManager()
-    )
+    let model = makeTestModel(coordinator: coordinator, defaults: defaults)
 
     await model.simulateDeveloperEvent(.locationChanged)
 
@@ -180,12 +192,7 @@ final class RefreshCoordinatorTests: XCTestCase {
       changeDetector: ChangeDetector(),
       notificationService: notificationService
     )
-    let model = AppModel(
-      coordinator: coordinator,
-      scheduler: RefreshScheduler(intervalProvider: { .seconds(3600) }),
-      preferencesStore: AppPreferencesStore(userDefaults: defaults),
-      launchAtLoginManager: LaunchAtLoginManager()
-    )
+    let model = makeTestModel(coordinator: coordinator, defaults: defaults)
 
     await model.simulateDeveloperEvent(.nextMeetupCreated)
 
@@ -211,11 +218,10 @@ final class RefreshCoordinatorTests: XCTestCase {
       notificationService: notificationService
     )
     let scheduler = RefreshScheduler(intervalProvider: { .seconds(3600) })
-    let model = AppModel(
+    let model = makeTestModel(
       coordinator: coordinator,
+      defaults: defaults,
       scheduler: scheduler,
-      preferencesStore: AppPreferencesStore(userDefaults: defaults),
-      launchAtLoginManager: LaunchAtLoginManager(),
       openNotificationSettingsPanel: {
         openedNotificationSettings += 1
       }
@@ -246,11 +252,10 @@ final class RefreshCoordinatorTests: XCTestCase {
       notificationService: notificationService
     )
     let scheduler = RefreshScheduler(intervalProvider: { .seconds(3600) })
-    let model = AppModel(
+    let model = makeTestModel(
       coordinator: coordinator,
+      defaults: defaults,
       scheduler: scheduler,
-      preferencesStore: AppPreferencesStore(userDefaults: defaults),
-      launchAtLoginManager: LaunchAtLoginManager(),
       openNotificationSettingsPanel: {
         openedNotificationSettings += 1
       }
@@ -284,12 +289,7 @@ final class RefreshCoordinatorTests: XCTestCase {
       changeDetector: ChangeDetector(),
       notificationService: notificationService
     )
-    let model = AppModel(
-      coordinator: coordinator,
-      scheduler: RefreshScheduler(intervalProvider: { .seconds(3600) }),
-      preferencesStore: AppPreferencesStore(userDefaults: defaults),
-      launchAtLoginManager: LaunchAtLoginManager()
-    )
+    let model = makeTestModel(coordinator: coordinator, defaults: defaults)
     model.snapshot = baselineSnapshot
 
     await model.simulateDeveloperEvent(DeveloperInjectedEvent.locationChanged)
@@ -325,12 +325,7 @@ final class RefreshCoordinatorTests: XCTestCase {
       changeDetector: ChangeDetector(),
       notificationService: notificationService
     )
-    let model = AppModel(
-      coordinator: coordinator,
-      scheduler: RefreshScheduler(intervalProvider: { .seconds(3600) }),
-      preferencesStore: AppPreferencesStore(userDefaults: defaults),
-      launchAtLoginManager: LaunchAtLoginManager()
-    )
+    let model = makeTestModel(coordinator: coordinator, defaults: defaults)
     model.snapshot = baselineSnapshot
 
     await model.simulateDeveloperEvent(.descriptionChanged)
@@ -359,12 +354,7 @@ final class RefreshCoordinatorTests: XCTestCase {
       changeDetector: ChangeDetector(),
       notificationService: notificationService
     )
-    let model = AppModel(
-      coordinator: coordinator,
-      scheduler: RefreshScheduler(intervalProvider: { .seconds(3600) }),
-      preferencesStore: AppPreferencesStore(userDefaults: defaults),
-      launchAtLoginManager: LaunchAtLoginManager()
-    )
+    let model = makeTestModel(coordinator: coordinator, defaults: defaults)
     model.snapshot = baselineSnapshot
 
     await model.simulateDeveloperEvent(.agendaChanged)
@@ -394,12 +384,7 @@ final class RefreshCoordinatorTests: XCTestCase {
       changeDetector: ChangeDetector(),
       notificationService: notificationService
     )
-    let model = AppModel(
-      coordinator: coordinator,
-      scheduler: RefreshScheduler(intervalProvider: { .seconds(3600) }),
-      preferencesStore: AppPreferencesStore(userDefaults: defaults),
-      launchAtLoginManager: LaunchAtLoginManager()
-    )
+    let model = makeTestModel(coordinator: coordinator, defaults: defaults)
     model.snapshot = baselineSnapshot
 
     await model.simulateDeveloperEvent(DeveloperInjectedEvent.seatThresholdReached)
@@ -502,12 +487,7 @@ final class RefreshCoordinatorTests: XCTestCase {
       changeDetector: ChangeDetector(),
       notificationService: notificationService
     )
-    let model = AppModel(
-      coordinator: coordinator,
-      scheduler: RefreshScheduler(intervalProvider: { .seconds(3600) }),
-      preferencesStore: AppPreferencesStore(userDefaults: defaults),
-      launchAtLoginManager: LaunchAtLoginManager()
-    )
+    let model = makeTestModel(coordinator: coordinator, defaults: defaults)
     model.snapshot = baselineSnapshot
 
     await model.simulateDeveloperEvent(DeveloperInjectedEvent.meetupPostponed)

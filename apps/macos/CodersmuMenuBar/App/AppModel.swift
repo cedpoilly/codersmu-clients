@@ -43,7 +43,7 @@ final class AppModel {
   @ObservationIgnored private let coordinator: RefreshCoordinator
   @ObservationIgnored private let scheduler: RefreshScheduler
   @ObservationIgnored private let preferencesStore: AppPreferencesStore
-  @ObservationIgnored private let launchAtLoginManager: LaunchAtLoginManager
+  @ObservationIgnored private let setLaunchAtLoginEnabledHandler: (Bool) throws -> Void
   @ObservationIgnored private let openNotificationSettingsPanel: @MainActor () -> Void
   @ObservationIgnored private var hasStarted = false
 
@@ -52,16 +52,18 @@ final class AppModel {
     scheduler: RefreshScheduler,
     preferencesStore: AppPreferencesStore,
     launchAtLoginManager: LaunchAtLoginManager,
+    launchAtLoginStatusProvider: (() -> Bool)? = nil,
+    setLaunchAtLoginEnabledHandler: ((Bool) throws -> Void)? = nil,
     openNotificationSettingsPanel: @escaping @MainActor () -> Void = AppModel.openNotificationSettingsPanel
   ) {
     self.coordinator = coordinator
     self.scheduler = scheduler
     self.preferencesStore = preferencesStore
-    self.launchAtLoginManager = launchAtLoginManager
+    self.setLaunchAtLoginEnabledHandler = setLaunchAtLoginEnabledHandler ?? launchAtLoginManager.setEnabled
     self.openNotificationSettingsPanel = openNotificationSettingsPanel
 
     var loadedPreferences = preferencesStore.load()
-    loadedPreferences.launchAtLoginEnabled = launchAtLoginManager.isEnabled()
+    loadedPreferences.launchAtLoginEnabled = launchAtLoginStatusProvider?() ?? launchAtLoginManager.isEnabled()
     self.preferences = loadedPreferences
   }
 
@@ -171,7 +173,7 @@ final class AppModel {
 
   func setLaunchAtLoginEnabled(_ isEnabled: Bool) {
     do {
-      try launchAtLoginManager.setEnabled(isEnabled)
+      try setLaunchAtLoginEnabledHandler(isEnabled)
       preferences.launchAtLoginEnabled = isEnabled
       launchAtLoginErrorMessage = nil
       persistPreferences()
