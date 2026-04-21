@@ -193,6 +193,75 @@ final class RefreshCoordinatorTests: XCTestCase {
     XCTAssertEqual(model.refreshState, RefreshState.idle)
   }
 
+  func testStartOpensNotificationSettingsWhenNotificationsNeedAttention() async {
+    let defaults = UserDefaults(suiteName: "RefreshCoordinatorTests-\(UUID().uuidString)")!
+    let notificationService = RecordingNotificationService()
+    notificationService.debugState = NotificationDebugState(
+      authorizationState: .denied,
+      alertsEnabled: false,
+      soundsEnabled: false,
+      notificationCenterEnabled: false
+    )
+
+    var openedNotificationSettings = 0
+    let coordinator = RefreshCoordinator(
+      source: StubMeetupSource(snapshot: nil),
+      snapshotStore: RecordingSnapshotStore(state: .empty),
+      changeDetector: ChangeDetector(),
+      notificationService: notificationService
+    )
+    let scheduler = RefreshScheduler(intervalProvider: { .seconds(3600) })
+    let model = AppModel(
+      coordinator: coordinator,
+      scheduler: scheduler,
+      preferencesStore: AppPreferencesStore(userDefaults: defaults),
+      launchAtLoginManager: LaunchAtLoginManager(),
+      openNotificationSettingsPanel: {
+        openedNotificationSettings += 1
+      }
+    )
+
+    await model.start()
+    scheduler.stop()
+
+    XCTAssertEqual(openedNotificationSettings, 1)
+    XCTAssertEqual(model.notificationDebugMessage, "Open macOS Notification Settings to enable Coders.mu notifications.")
+  }
+
+  func testStartDoesNotOpenNotificationSettingsWhenNotificationsAreEnabled() async {
+    let defaults = UserDefaults(suiteName: "RefreshCoordinatorTests-\(UUID().uuidString)")!
+    let notificationService = RecordingNotificationService()
+    notificationService.debugState = NotificationDebugState(
+      authorizationState: .authorized,
+      alertsEnabled: true,
+      soundsEnabled: true,
+      notificationCenterEnabled: true
+    )
+
+    var openedNotificationSettings = 0
+    let coordinator = RefreshCoordinator(
+      source: StubMeetupSource(snapshot: nil),
+      snapshotStore: RecordingSnapshotStore(state: .empty),
+      changeDetector: ChangeDetector(),
+      notificationService: notificationService
+    )
+    let scheduler = RefreshScheduler(intervalProvider: { .seconds(3600) })
+    let model = AppModel(
+      coordinator: coordinator,
+      scheduler: scheduler,
+      preferencesStore: AppPreferencesStore(userDefaults: defaults),
+      launchAtLoginManager: LaunchAtLoginManager(),
+      openNotificationSettingsPanel: {
+        openedNotificationSettings += 1
+      }
+    )
+
+    await model.start()
+    scheduler.stop()
+
+    XCTAssertEqual(openedNotificationSettings, 0)
+  }
+
   func testRepeatedLocationSimulationProducesFreshNotificationEvents() async {
     let defaults = UserDefaults(suiteName: "RefreshCoordinatorTests-\(UUID().uuidString)")!
     let baselineSnapshot = makeSnapshot(
@@ -520,6 +589,7 @@ private final class RecordingSnapshotStore: SnapshotStore {
 private final class RecordingNotificationService: NotificationService {
   private(set) var notifiedEvents: [MeetupChangeEvent] = []
   private(set) var notificationBatches: [[MeetupChangeEvent]] = []
+  var debugState: NotificationDebugState = .unavailable
 
   func requestAuthorization() async {}
 
@@ -527,6 +597,10 @@ private final class RecordingNotificationService: NotificationService {
     notifiedEvents = events
     notificationBatches.append(events)
     return events.map { _ in .scheduled("Scheduled in tests.") }
+  }
+
+  func notificationDebugState() async -> NotificationDebugState {
+    debugState
   }
 }
 

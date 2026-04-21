@@ -45,6 +45,17 @@ struct NotificationDebugState {
     let center = notificationCenterEnabled ? "center on" : "center off"
     return "\(authorizationState.label) (\(alerts), \(sounds), \(center))"
   }
+
+  var needsAttention: Bool {
+    switch authorizationState {
+    case .authorized, .provisional, .ephemeral:
+      return !alertsEnabled || !notificationCenterEnabled
+    case .notDetermined, .denied:
+      return true
+    case .unsupported:
+      return false
+    }
+  }
 }
 
 enum NotificationDeliveryResult {
