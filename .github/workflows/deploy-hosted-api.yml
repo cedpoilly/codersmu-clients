@@ -74,24 +74,7 @@ jobs:
           set -euo pipefail
 
           readarray -t coolify_values < <(
-            python - <<'PY'
-from urllib.parse import parse_qs, urlparse
-import os
-import sys
-
-raw = os.environ["COOLIFY_DEPLOY_WEBHOOK_URL"]
-parsed = urlparse(raw)
-uuid = parse_qs(parsed.query).get("uuid", [""])[0]
-base = f"{parsed.scheme}://{parsed.netloc}"
-api_base = f"{base}/api/v1"
-
-if not uuid:
-    print("Missing uuid query parameter in COOLIFY_DEPLOY_WEBHOOK_URL.", file=sys.stderr)
-    sys.exit(1)
-
-print(api_base)
-print(uuid)
-PY
+            python -c 'from urllib.parse import parse_qs, urlparse; import os, sys; raw = os.environ["COOLIFY_DEPLOY_WEBHOOK_URL"]; parsed = urlparse(raw); uuid = parse_qs(parsed.query).get("uuid", [""])[0]; base = f"{parsed.scheme}://{parsed.netloc}"; api_base = f"{base}/api/v1"; assert uuid, "Missing uuid query parameter in COOLIFY_DEPLOY_WEBHOOK_URL."; print(api_base); print(uuid)'
           )
 
           COOLIFY_API_BASE="${coolify_values[0]}"
@@ -104,29 +87,11 @@ PY
           )"
 
           env_exists="$(
-            ENV_LIST="${env_list}" python - <<'PY'
-import json
-import os
-
-envs = json.loads(os.environ["ENV_LIST"])
-print("true" if any(item.get("key") == "CODERSMU_RELEASE_SHA" for item in envs) else "false")
-PY
+            ENV_LIST="${env_list}" python -c 'import json, os; envs = json.loads(os.environ["ENV_LIST"]); print("true" if any(item.get("key") == "CODERSMU_RELEASE_SHA" for item in envs) else "false")'
           )"
 
           request_body="$(
-            python - <<'PY'
-import json
-import os
-
-print(json.dumps({
-    "key": "CODERSMU_RELEASE_SHA",
-    "value": os.environ["EXPECTED_SHA"],
-    "is_preview": False,
-    "is_literal": True,
-    "is_multiline": False,
-    "is_shown_once": False,
-}))
-PY
+            python -c 'import json, os; print(json.dumps({"key": "CODERSMU_RELEASE_SHA", "value": os.environ["EXPECTED_SHA"], "is_preview": False, "is_literal": True, "is_multiline": False, "is_shown_once": False}))'
           )"
 
           if [[ "${env_exists}" == "true" ]]; then
