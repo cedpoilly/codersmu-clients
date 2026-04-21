@@ -67,9 +67,10 @@ Expected health response:
 
 1. Push or merge to `main`.
 2. Let the `CI` workflow finish successfully.
-3. `Hosted API Deploy` calls the Coolify auth-required deploy webhook with `Authorization: Bearer ${COOLIFY_DEPLOY_TOKEN}`.
-4. The deploy workflow polls `https://codersmu.cedpoilly.dev/health` until `releaseSha` matches the pushed commit.
-5. Run the verify steps above if you want an additional manual smoke test.
+3. `Hosted API Deploy` updates the app env `CODERSMU_RELEASE_SHA=<expected-commit>` via the Coolify API.
+4. `Hosted API Deploy` calls the Coolify auth-required deploy webhook with `Authorization: Bearer ${COOLIFY_DEPLOY_TOKEN}`.
+5. The deploy workflow polls `https://codersmu.cedpoilly.dev/health` until `releaseSha` matches the pushed commit.
+6. Run the verify steps above if you want an additional manual smoke test.
 
 If `COOLIFY_DEPLOY_WEBHOOK_URL` or `COOLIFY_DEPLOY_TOKEN` is missing, `Hosted API Deploy` fails fast with a configuration error and production stays on the previous release.
 If `/health` does not expose `releaseSha`, `Hosted API Deploy` fails because it cannot prove which revision is live.
@@ -81,7 +82,12 @@ If `/health` does not expose `releaseSha`, `Hosted API Deploy` fails because it 
 
 Set `COOLIFY_DEPLOY_WEBHOOK_URL` to the auth-required Coolify deploy webhook for the `codersmu-api` app.
 
-Set `COOLIFY_DEPLOY_TOKEN` to a Coolify API token with `Deploy` permission. The workflow sends a `GET` request to the deploy webhook with `Authorization: Bearer <token>`, then waits for `/health` to report the new `releaseSha`.
+Set `COOLIFY_DEPLOY_TOKEN` to a Coolify API token with:
+
+- `Deploy` permission
+- application environment variable write permission
+
+The workflow derives the application UUID from `COOLIFY_DEPLOY_WEBHOOK_URL`, updates `CODERSMU_RELEASE_SHA` through the Coolify API, then sends a `GET` request to the deploy webhook with `Authorization: Bearer <token>`.
 
 `CODERSMU_RELEASE_SHA` must be set in the runtime environment. `/health` and the `x-codersmu-release-sha` header use it to expose the live deployed revision directly, and the deploy workflow depends on it.
 
