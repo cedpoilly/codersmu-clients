@@ -31,7 +31,27 @@ jobs:
       EXPECTED_SHA: ${{ github.event_name == 'workflow_dispatch' && github.sha || github.event.workflow_run.head_sha }}
       COOLIFY_DEPLOY_WEBHOOK_URL: ${{ secrets.COOLIFY_DEPLOY_WEBHOOK_URL }}
     steps:
+      - name: Ignore stale successful CI completions on main
+        id: freshness
+        if: ${{ github.event_name == 'workflow_run' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+
+          current_main_sha="$(gh api repos/${GITHUB_REPOSITORY}/commits/main --jq .sha)"
+          echo "current_main_sha=${current_main_sha}" >> "${GITHUB_OUTPUT}"
+
+          if [[ "${current_main_sha}" != "${EXPECTED_SHA}" ]]; then
+            echo "should_deploy=false" >> "${GITHUB_OUTPUT}"
+            echo "Skipping deploy for stale CI completion ${EXPECTED_SHA}; main now points to ${current_main_sha}."
+            exit 0
+          fi
+
+          echo "should_deploy=true" >> "${GITHUB_OUTPUT}"
+
       - name: Require Coolify deploy webhook secret
+        if: ${{ github.event_name == 'workflow_dispatch' || steps.freshness.outputs.should_deploy == 'true' }}
         run: |
           set -euo pipefail
 
@@ -42,11 +62,13 @@ jobs:
           fi
 
       - name: Trigger Coolify deployment
+        if: ${{ github.event_name == 'workflow_dispatch' || steps.freshness.outputs.should_deploy == 'true' }}
         run: |
           set -euo pipefail
           curl -fsSL -X POST "${COOLIFY_DEPLOY_WEBHOOK_URL}"
 
       - name: Wait for production to serve the expected release SHA
+        if: ${{ github.event_name == 'workflow_dispatch' || steps.freshness.outputs.should_deploy == 'true' }}
         run: |
           set -euo pipefail
 
@@ -60,6 +82,12 @@ jobs:
 
             if [[ -n "${payload}" ]]; then
               live_sha="$(printf '%s' "${payload}" | python -c 'import json, sys; print(json.load(sys.stdin).get("releaseSha", ""))')"
+
+              if [[ -z "${live_sha}" ]]; then
+                echo "Production health payload is missing releaseSha. CODERSMU_RELEASE_SHA must be configured in the runtime environment." >&2
+                printf '%s\n' "${payload}" >&2
+                exit 1
+              fi
 
               if [[ "${live_sha}" == "${EXPECTED_SHA}" ]]; then
                 echo "Production is now serving ${EXPECTED_SHA}."

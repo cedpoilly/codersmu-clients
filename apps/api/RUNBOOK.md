@@ -8,7 +8,7 @@ Operational notes for the deployed Coders.mu hosted API.
 - Health endpoint: `https://codersmu.cedpoilly.dev/health`
 - Coolify app: `codersmu-api`
 - Default upstream API: `https://coders.mu/api/public/v1`
-- Optional release env: `CODERSMU_RELEASE_SHA`
+- Required release env for auto-deploy verification: `CODERSMU_RELEASE_SHA`
 - Optional durable cache env: `CODERSMU_API_CACHE_FILE`
 
 ### TLS resolver note
@@ -53,6 +53,7 @@ Treat that workflow as an uptime probe for the live deployment, not proof that t
 Automatic production deploys run separately in GitHub Actions via `Hosted API Deploy`:
 
 - triggered after a successful `CI` push workflow on `main`
+- stale `CI` completions are ignored if `main` has advanced since that run
 - can also be run manually with `workflow_dispatch`
 - requires the repository secret `COOLIFY_DEPLOY_WEBHOOK_URL`
 
@@ -71,6 +72,7 @@ Expected health response:
 5. Run the verify steps above if you want an additional manual smoke test.
 
 If `COOLIFY_DEPLOY_WEBHOOK_URL` is missing, `Hosted API Deploy` fails fast with a configuration error and production stays on the previous release.
+If `/health` does not expose `releaseSha`, `Hosted API Deploy` fails because it cannot prove which revision is live.
 
 ### Required GitHub secret
 
@@ -78,7 +80,7 @@ If `COOLIFY_DEPLOY_WEBHOOK_URL` is missing, `Hosted API Deploy` fails fast with 
 
 Set this to the Coolify deploy webhook for the `codersmu-api` app. The workflow sends a `POST` request to that URL and then waits for `/health` to report the new `releaseSha`.
 
-If `CODERSMU_RELEASE_SHA` is set in the runtime environment, `/health` and the `x-codersmu-release-sha` header expose the live deployed revision directly.
+`CODERSMU_RELEASE_SHA` must be set in the runtime environment. `/health` and the `x-codersmu-release-sha` header use it to expose the live deployed revision directly, and the deploy workflow depends on it.
 
 ### Build artifacts
 
