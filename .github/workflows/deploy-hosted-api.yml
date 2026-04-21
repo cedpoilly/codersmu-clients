@@ -75,22 +75,22 @@ jobs:
 
           readarray -t coolify_values < <(
             python - <<'PY'
-from urllib.parse import parse_qs, urlparse
-import os
-import sys
+            from urllib.parse import parse_qs, urlparse
+            import os
+            import sys
 
-raw = os.environ["COOLIFY_DEPLOY_WEBHOOK_URL"]
-parsed = urlparse(raw)
-uuid = parse_qs(parsed.query).get("uuid", [""])[0]
-base = f"{parsed.scheme}://{parsed.netloc}"
-api_base = f"{base}/api/v1"
+            raw = os.environ["COOLIFY_DEPLOY_WEBHOOK_URL"]
+            parsed = urlparse(raw)
+            uuid = parse_qs(parsed.query).get("uuid", [""])[0]
+            base = f"{parsed.scheme}://{parsed.netloc}"
+            api_base = f"{base}/api/v1"
 
-if not uuid:
-    print("Missing uuid query parameter in COOLIFY_DEPLOY_WEBHOOK_URL.", file=sys.stderr)
-    sys.exit(1)
+            if not uuid:
+                print("Missing uuid query parameter in COOLIFY_DEPLOY_WEBHOOK_URL.", file=sys.stderr)
+                sys.exit(1)
 
-print(api_base)
-print(uuid)
+            print(api_base)
+            print(uuid)
 PY
           )
 
@@ -105,27 +105,27 @@ PY
 
           env_exists="$(
             ENV_LIST="${env_list}" python - <<'PY'
-import json
-import os
+            import json
+            import os
 
-envs = json.loads(os.environ["ENV_LIST"])
-print("true" if any(item.get("key") == "CODERSMU_RELEASE_SHA" for item in envs) else "false")
+            envs = json.loads(os.environ["ENV_LIST"])
+            print("true" if any(item.get("key") == "CODERSMU_RELEASE_SHA" for item in envs) else "false")
 PY
           )"
 
           request_body="$(
             python - <<'PY'
-import json
-import os
+            import json
+            import os
 
-print(json.dumps({
-    "key": "CODERSMU_RELEASE_SHA",
-    "value": os.environ["EXPECTED_SHA"],
-    "is_preview": False,
-    "is_literal": True,
-    "is_multiline": False,
-    "is_shown_once": False,
-}))
+            print(json.dumps({
+                "key": "CODERSMU_RELEASE_SHA",
+                "value": os.environ["EXPECTED_SHA"],
+                "is_preview": False,
+                "is_literal": True,
+                "is_multiline": False,
+                "is_shown_once": False,
+            }))
 PY
           )"
 
