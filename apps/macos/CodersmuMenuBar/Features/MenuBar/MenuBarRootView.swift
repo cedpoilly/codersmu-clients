@@ -9,6 +9,7 @@ struct MenuBarRootView: View {
 
   @Bindable var appModel: AppModel
   @Environment(\.openSettings) private var openSettings
+  @State private var isShowingAgenda = false
   @State private var isShowingQuitConfirmation = false
   @FocusState private var focusedTarget: FocusTarget?
 
@@ -34,7 +35,11 @@ struct MenuBarRootView: View {
 
       Divider()
 
-      NextMeetupSummaryView(snapshot: appModel.snapshot)
+      NextMeetupSummaryView(
+        snapshot: appModel.snapshot,
+        agendaItems: agendaItems,
+        isShowingAgenda: $isShowingAgenda
+      )
 
       Divider()
 
@@ -161,5 +166,33 @@ struct MenuBarRootView: View {
     .onDisappear {
       focusedTarget = nil
     }
+  }
+
+  private var agendaItems: [MeetupAgendaItem] {
+    if let structuredItems = appModel.snapshot?.agendaItems, !structuredItems.isEmpty {
+      return structuredItems
+    }
+
+    guard let summary = appModel.snapshot?.agendaSummary else {
+      return []
+    }
+
+    return summary
+      .split(separator: "|")
+      .enumerated()
+      .compactMap { index, title -> MeetupAgendaItem? in
+        let trimmedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedTitle.isEmpty else {
+          return nil
+        }
+
+        return MeetupAgendaItem(
+          id: "summary-\(index)",
+          title: trimmedTitle,
+          description: nil,
+          durationMinutes: nil,
+          speakers: []
+        )
+      }
   }
 }

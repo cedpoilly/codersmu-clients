@@ -236,7 +236,21 @@ final class CodersMuAPIClientTests: XCTestCase {
         "venue": "Hosted Venue",
         "location": "Moka",
         "status": "published",
-        "sessions": [],
+        "sessions": [
+          [
+            "id": "session-1",
+            "title": "Hosted Talk",
+            "description": "<p>Deep dive.</p>",
+            "durationMinutes": 30,
+            "speakers": [
+              [
+                "id": "speaker-1",
+                "name": "Ada Lovelace",
+                "githubUsername": "ada",
+              ],
+            ],
+          ],
+        ],
         "sponsors": [],
         "attendeeCount": 42,
         "seatsAvailable": 12,
@@ -269,6 +283,13 @@ final class CodersMuAPIClientTests: XCTestCase {
     XCTAssertEqual(response.meetup?.id, "hosted-meetup")
     XCTAssertEqual(response.meetup?.title, "Hosted Meetup")
     XCTAssertEqual(response.meetup?.links.rsvp, "https://lu.ma/hosted-meetup")
+    XCTAssertEqual(response.meetup?.sessions.first?.durationMinutes, 30)
+
+    let snapshot = try XCTUnwrap(response.meetup?.toSnapshot(lastSyncedAt: Date()))
+    XCTAssertEqual(snapshot.agendaItems.first?.title, "Hosted Talk")
+    XCTAssertEqual(snapshot.agendaItems.first?.description, "Deep dive.")
+    XCTAssertEqual(snapshot.agendaItems.first?.durationMinutes, 30)
+    XCTAssertEqual(snapshot.agendaItems.first?.speakers, ["Ada Lovelace"])
   }
 
   func testFetchNextMeetupResponseDropsUnsafeHostedLinks() async throws {

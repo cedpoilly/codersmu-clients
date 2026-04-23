@@ -3,6 +3,7 @@ packages/*/dist
 node_modules
 apps/*/node_modules
 apps/*/dist
+apps/*/.derived-data/
 apps/*/raycast-env.d.ts
 apps/*/.codersmu-api/
 *.tsbuildinfo

@@ -37,6 +37,16 @@ describe('fetchFrontendMuMeetups', () => {
         rsvpLink: 'https://coders.mu/rsvp/future-meetup',
         mapUrl: 'https://maps.example.com/future-meetup',
         parkingLocation: 'https://parking.example.com/future-meetup',
+        sessions: [
+          {
+            id: 'session-1',
+            title: 'Opening Talk',
+            description: null,
+            durationMinutes: 30,
+            order: 1,
+            speakers: [],
+          },
+        ],
       }), { status: 200 }))
       .mockResolvedValueOnce(new Response(`
         <div
@@ -77,6 +87,14 @@ describe('fetchFrontendMuMeetups', () => {
       mapUrl: 'https://maps.example.com/future-meetup',
       parkingLocation: 'https://parking.example.com/future-meetup',
       photos: [],
+      sessions: [
+        expect.objectContaining({
+          id: 'session-1',
+          title: 'Opening Talk',
+          durationMinutes: 30,
+          order: 1,
+        }),
+      ],
     })
   })
 
