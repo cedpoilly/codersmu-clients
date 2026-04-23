@@ -81,8 +81,11 @@ enum CodersMuBoolish: Decodable {
 }
 
 struct CodersMuSessionDTO: Decodable {
+  let id: String?
   let title: String
   let description: String?
+  let durationMinutes: Int?
+  let order: Int?
   let speakers: [CodersMuSpeakerDTO]?
 }
 
@@ -103,8 +106,10 @@ struct MeetupSpeakerDTO: Decodable {
 }
 
 struct MeetupSessionDTO: Decodable {
+  let id: String?
   let title: String
   let description: String?
+  let durationMinutes: Int?
   let speakers: [MeetupSpeakerDTO]
 }
 
@@ -165,6 +170,7 @@ struct MeetupDTO: Decodable {
       title: title,
       description: normalizedDescription,
       agendaSummary: normalizedAgendaSummary,
+      agendaItems: normalizedAgendaItems,
       startsAt: parsedDate(startsAt),
       endsAt: parsedDate(endsAt),
       venueName: location.name.normalizedLocationValue,
@@ -216,6 +222,25 @@ struct MeetupDTO: Decodable {
     return sessionTitles.joined(separator: " | ")
   }
 
+  private var normalizedAgendaItems: [MeetupAgendaItem] {
+    sessions.enumerated().compactMap { index, session in
+      guard let title = session.title.normalizedSummary else {
+        return nil
+      }
+
+      let speakers = session.speakers
+        .compactMap { $0.name.trimmedNilIfEmpty }
+
+      return MeetupAgendaItem(
+        id: session.id?.trimmedNilIfEmpty ?? "\(index)-\(slugify(title))",
+        title: title,
+        description: session.description?.normalizedSummary,
+        durationMinutes: session.durationMinutes,
+        speakers: speakers
+      )
+    }
+  }
+
   private func normalizedDescriptionText(fallingBackFrom normalizedAgendaSummary: String?) -> String? {
     if let descriptionText = descriptionText?.normalizedSummary {
       return descriptionText
@@ -258,6 +283,7 @@ struct HostedMeetupSessionDTO: Decodable {
   let id: String?
   let title: String
   let description: String?
+  let durationMinutes: Int?
   let order: Int?
   let speakers: [HostedMeetupSpeakerDTO]
 }
@@ -307,8 +333,10 @@ struct HostedMeetupDTO: Decodable {
     let meetupURL = "\(meetupDetailURLPrefix)\(id.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? id)"
     let normalizedSessions = sessions.map { session in
       MeetupSessionDTO(
+        id: session.id,
         title: stripHTML(session.title) ?? session.title,
         description: stripHTML(session.description),
+        durationMinutes: session.durationMinutes,
         speakers: session.speakers.map { speaker in
           MeetupSpeakerDTO(
             name: speaker.name,
@@ -540,8 +568,10 @@ struct CodersMuMeetupDTO: Decodable {
     let meetupURL = "\(meetupDetailURLPrefix)\(encodedId)"
     let normalizedSessions = sessions?.map { session in
       MeetupSessionDTO(
+        id: session.id,
         title: stripHTML(session.title) ?? session.title,
         description: stripHTML(session.description),
+        durationMinutes: session.durationMinutes,
         speakers: (session.speakers ?? []).map { speaker in
           MeetupSpeakerDTO(
             name: speaker.name,

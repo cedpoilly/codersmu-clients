@@ -21,6 +21,7 @@ interface RawSession {
   id: string
   title: string
   description?: string | null
+  durationMinutes?: number | null
   order?: number | null
   speakers?: RawSpeaker[]
 }
@@ -232,6 +233,7 @@ function normalizeMeetup(rawMeetup: RawMeetup): Meetup {
       id: session.id,
       title: session.title,
       description: session.description ?? null,
+      durationMinutes: session.durationMinutes ?? null,
       order: session.order ?? null,
       speakers: (session.speakers ?? []).map((speaker) => ({
         id: speaker.id,

@@ -10,6 +10,7 @@ export interface MeetupSession {
   id: string
   title: string
   description?: string | null
+  durationMinutes?: number | null
   order?: number | null
   speakers: MeetupSpeaker[]
 }

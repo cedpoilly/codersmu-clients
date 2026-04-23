@@ -49,14 +49,6 @@ final class RefreshCoordinatorTests: XCTestCase {
     XCTAssertNotNil(DeveloperInjectedEvent.meetupPostponed.applying(to: nil))
   }
 
-  func testNextMeetupSimulationCanCreateASyntheticSnapshot() {
-    let simulatedSnapshot = DeveloperInjectedEvent.nextMeetupCreated.applying(to: nil)
-
-    XCTAssertEqual(simulatedSnapshot?.title, "Developer Test Meetup")
-    XCTAssertEqual(simulatedSnapshot?.status, .upcoming)
-    XCTAssertNotNil(simulatedSnapshot?.meetupURL)
-  }
-
   func testRefreshRetainsDeliveredFingerprintsForSameMeetupWhenSlugChanges() async {
     let previousSnapshot = makeSnapshot(
       slug: "2026-05-23-the-may-meetup",
@@ -197,6 +189,8 @@ final class RefreshCoordinatorTests: XCTestCase {
     await model.simulateDeveloperEvent(.nextMeetupCreated)
 
     XCTAssertEqual(model.snapshot?.title, "Developer Test Meetup")
+    XCTAssertEqual(model.snapshot?.status, .upcoming)
+    XCTAssertNotNil(model.snapshot?.meetupURL)
     XCTAssertEqual(model.refreshState, RefreshState.idle)
   }
 

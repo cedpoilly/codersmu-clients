@@ -1,3 +1,4 @@
+import Foundation
 import SwiftUI
 
 @main
@@ -37,6 +38,10 @@ struct CodersmuMenuBarApp: App {
     }
 
     _appModel = State(initialValue: model)
+    guard !Self.isRunningUnitTests else {
+      return
+    }
+
     AppDelegate.onDidFinishLaunching = {
       Task { @MainActor in
         await model.start()
@@ -57,5 +62,9 @@ struct CodersmuMenuBarApp: App {
       SettingsView(appModel: appModel)
         .frame(width: 420, height: 320)
     }
+  }
+
+  private static var isRunningUnitTests: Bool {
+    ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
   }
 }
