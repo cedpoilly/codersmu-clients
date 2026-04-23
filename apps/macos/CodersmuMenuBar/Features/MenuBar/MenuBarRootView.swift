@@ -75,6 +75,23 @@ struct MenuBarRootView: View {
 
       Divider()
 
+      VStack(alignment: .leading, spacing: 6) {
+        Text("Coders.mu Clients is open source")
+          .font(.subheadline.weight(.bold))
+          .foregroundStyle(.primary)
+
+        Text("Contribute to the project. Make it your own.")
+          .font(.caption)
+          .foregroundStyle(.secondary)
+
+        Link(destination: Self.repositoryURL) {
+          Label("Contribute", systemImage: "chevron.left.forwardslash.chevron.right")
+        }
+      }
+      .buttonStyle(.link)
+
+      Divider()
+
       HStack {
         Button(appModel.isRefreshing ? "Refreshing…" : "Refresh Now") {
           Task {
@@ -195,4 +212,6 @@ struct MenuBarRootView: View {
         )
       }
   }
+
+  private static let repositoryURL = URL(string: "https://github.com/cedpoilly/codersmu-clients")!
 }
