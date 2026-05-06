@@ -247,6 +247,7 @@ final class CodersMuAPIClientTests: XCTestCase {
                 "id": "speaker-1",
                 "name": "Ada Lovelace",
                 "githubUsername": "ada",
+                "featured": true,
               ],
             ],
           ],
@@ -254,6 +255,9 @@ final class CodersMuAPIClientTests: XCTestCase {
         "sponsors": [],
         "attendeeCount": 42,
         "seatsAvailable": 12,
+        "capacityTotal": 12,
+        "rsvpCount": 12,
+        "seatsRemaining": 0,
         "acceptingRsvp": 1,
         "rsvpLink": "https://lu.ma/hosted-meetup",
       ],
@@ -290,6 +294,7 @@ final class CodersMuAPIClientTests: XCTestCase {
     XCTAssertEqual(snapshot.agendaItems.first?.description, "Deep dive.")
     XCTAssertEqual(snapshot.agendaItems.first?.durationMinutes, 30)
     XCTAssertEqual(snapshot.agendaItems.first?.speakers, ["Ada Lovelace"])
+    XCTAssertEqual(snapshot.seatsRemaining, 0)
   }
 
   func testFetchNextMeetupResponseDropsUnsafeHostedLinks() async throws {

@@ -276,7 +276,7 @@ struct HostedMeetupSpeakerDTO: Decodable {
   let name: String
   let githubUsername: String?
   let avatarUrl: String?
-  let featured: Int?
+  let featured: CodersMuBoolish?
 }
 
 struct HostedMeetupSessionDTO: Decodable {
@@ -343,7 +343,7 @@ struct HostedMeetupDTO: Decodable {
             title: nil,
             githubUsername: speaker.githubUsername,
             avatarUrl: speaker.avatarUrl,
-            featured: speaker.featured.map { $0 != 0 }
+            featured: speaker.featured?.value
           )
         }
       )
